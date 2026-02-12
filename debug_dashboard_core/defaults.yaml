@@ -1,0 +1,88 @@
+# Debug Dashboard Core — default configuration
+# Project config.yaml overrides these values via deep merge.
+config_schema_version: 1
+
+project:
+  name: "My Project"
+  root: "."
+  db_path: "app.db"
+
+plugins:
+  dirs: []
+
+checks_order: []  # empty = use discovery order (builtin first, then plugins)
+
+# ── Agent Configuration ──
+agent:
+  enabled: false                    # Master switch for agent mode
+  auto_start: true                  # Auto-start agent loop on server boot
+  auto_scan_on_change: true         # Run affected checkers when files change
+  auto_llm_on_critical: false       # Auto-trigger LLM analysis on CRITICAL
+  auto_fix_scope: "none"            # "none" | "todo_markers" — agent never auto-fixes beyond TODO markers
+  debounce_seconds: 2.0             # File change debounce window
+  scan_cooldown_seconds: 30         # Minimum interval between auto-scans
+  manual_scan_min_interval: 2       # GPT Review #4-5: minimum seconds between manual scans
+  singleton_max_age_seconds: 86400  # GPT Review #4-1: TTL for stale lock reclaim (default 24h)
+  sse_replay_limit: 50              # GPT Review #4-3: max missed events on SSE reconnect
+  watch_dirs: ["."]                 # Directories to watch (relative to project.root)
+  ignore_patterns:                  # GPT Review #4-2: additional ignore patterns (merged with builtins)
+    # POLICY (GPT Review #6-2): ADD-ONLY merge. These patterns are ADDED to the
+    # builtin ignore set (IGNORE_DIRS, SELF_TRIGGER_EXTENSIONS in observer.py).
+    # Removing builtin patterns is intentionally not supported — doing so could
+    # cause self-trigger loops (.db, .lock, __pycache__ etc). If you need to
+    # monitor a normally-ignored directory, create a separate watcher instead.
+    - "*.pyc"
+    - "__pycache__"
+    - ".git"
+    - "*.tmp"
+    - "*.bak"
+  ignore_extensions:                # GPT Review #4-2: additional extensions to ignore (ADD-ONLY)
+    - ".tmp"
+    - ".bak"
+    - ".orig"
+  purge_interval_seconds: 3600      # GPT Review #3E: runtime purge interval (default: 1h)
+  retention:
+    event_max_rows: 10000           # Max agent_events rows in SQLite
+    event_max_days: 7               # Purge events older than N days
+    analysis_max_days: 90           # Purge LLM analyses older than N days
+
+# ── LLM Configuration ──
+llm:
+  model: ""                         # LiteLLM model string (empty = disabled)
+  fallback_model: ""                # Fallback if primary fails
+  api_key_env: ""                   # Env var name for API key
+  temperature: 0.3
+  max_tokens: 2000
+  timeout_seconds: 30
+  daily_budget_usd: 5.0             # Daily spending limit
+
+# ── Monitor Configuration (Main Service Agent Monitoring) ──
+monitor:
+  enabled: false                    # Master switch for monitor mode
+  main_service_url: "http://127.0.0.1:5000"  # Main service base URL
+  main_service_db: ""              # Path to scripts.db (empty = auto-detect from project.root)
+  poll_interval_sec: 3             # Incremental polling interval for session updates
+  health_check_interval_sec: 10    # Main service health check interval
+
+checks:
+  environment:
+    enabled: true
+    packages: ["flask"]
+    cleanup_dir: "downloads"
+    env_template: |
+      # Auto-generated .env template
+      # Fill in your actual values
+      FLASK_SECRET_KEY=change-me-to-random-string
+  security:
+    enabled: true
+    main_file: "app.py"
+    scan_dirs: ["."]
+  performance:
+    enabled: true
+    main_table: ""
+    index_columns: []
+    n_plus_1_dirs: []
+  database:
+    enabled: true
+    required_tables: []
+    optional_tables: []

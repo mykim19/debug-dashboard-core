@@ -1,0 +1,85 @@
+config_schema_version: 1
+
+project:
+  name: "Knowledge Hub"
+  root: "/Volumes/01_Kioxia/project0914"
+  db_path: "scripts.db"
+
+plugins:
+  dirs: ["scanner"]
+
+checks_order:
+  - environment
+  - url_parsing
+  - ytdlp
+  - database
+  - database_videos
+  - duplication
+  - performance
+  - security
+  - ux_quality
+
+checks:
+  environment:
+    enabled: true
+    packages: ["flask", "whisper", "flask_socketio"]
+    env_template: |
+      YT_DLP_PATH=/opt/anaconda3/bin/yt-dlp
+      YT_JS_RUNTIME=node:/opt/homebrew/bin/node
+      FLASK_SECRET_KEY=change-me-to-random-string
+  url_parsing:
+    enabled: true
+  ytdlp:
+    enabled: true
+  database:
+    enabled: true
+    required_tables: ["videos", "knowledge_nodes", "knowledge_edges", "knowledge_qa", "knowledge_claims"]
+    optional_tables: ["global_nodes", "global_edges", "global_edge_evidence", "node_mappings", "concept_aliases", "relation_types"]
+  database_videos:
+    enabled: true
+  duplication:
+    enabled: true
+    scan_files: ["app.py"]
+  performance:
+    enabled: true
+    main_table: "videos"
+    index_columns: ["status", "source_type", "content_hash"]
+    n_plus_1_dirs: ["agent/"]
+  security:
+    enabled: true
+    main_file: "app.py"
+    scan_dirs: [".", "agent/", "utils/"]
+  ux_quality:
+    enabled: true
+
+# ── Agent Configuration ──
+agent:
+  enabled: true                     # Agent mode ON — enables FileObserver + auto-scan
+  auto_start: true                  # Auto-start agent loop on server boot
+  auto_scan_on_change: true         # Run affected checkers when files change
+  auto_llm_on_critical: false       # Auto-trigger LLM analysis on CRITICAL (needs llm.model)
+  debounce_seconds: 2.0
+  scan_cooldown_seconds: 30
+  manual_scan_min_interval: 2
+  watch_dirs: ["."]
+  ignore_patterns:
+    - "*.pyc"
+    - "__pycache__"
+    - ".git"
+    - "*.tmp"
+    - "*.bak"
+    - "downloads"
+  retention:
+    event_max_rows: 10000
+    event_max_days: 7
+    analysis_max_days: 90
+
+# ── LLM Configuration (Tier 2 — optional) ──
+llm:
+  model: ""                         # Empty = LLM disabled, Tier 1 only
+  fallback_model: ""
+  api_key_env: ""
+  temperature: 0.3
+  max_tokens: 2000
+  timeout_seconds: 30
+  daily_budget_usd: 5.0

@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SYSTEM DIAGNOSTICS — {{ project_name }}</title>
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body>
+  <!-- Scanline overlay -->
+  <div class="scanline-overlay"></div>
+
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <span class="topbar-icon">&#9673;</span>
+      <span class="topbar-title">SYSTEM DIAGNOSTICS</span>
+      <span class="topbar-sep">|</span>
+      <select id="workspaceSelect" class="workspace-dropdown">
+        {% for ws in workspaces %}
+        <option value="{{ ws.id }}" {% if ws.is_current %}selected{% endif %}>
+          {{ ws.name }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-topbar-action" id="btnManageWs" title="Add, remove, or switch project workspaces">
+        <span class="btn-topbar-icon">&#x1F4C2;</span>
+        <span class="btn-topbar-label">WORKSPACES</span>
+      </button>
+      <button class="btn-icon" id="btnTheme" title="Toggle between dark and light theme">
+        <span id="themeIcon">&#9790;</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Status banner -->
+  <section class="status-banner" id="statusBanner">
+    <div class="status-row">
+      <div class="status-left">
+        <span class="status-dot" id="statusDot"></span>
+        <span class="status-label">SYSTEM STATUS:</span>
+        <span class="status-value" id="statusValue">STANDBY</span>
+      </div>
+      <div class="status-actions">
+        <button class="btn-ai-overview" id="btnAiOverview" title="LLM&#xC774; &#xC804;&#xCCB4; &#xC2A4;&#xCE94; &#xACB0;&#xACFC;&#xB97C; &#xBD84;&#xC11D;&#xD558;&#xC5EC; &#xC694;&#xC57D;&#xD569;&#xB2C8;&#xB2E4;">
+          <span>&#x1F9E0;</span> AI &#xC694;&#xC57D;
+        </button>
+        <button class="btn-export" id="btnExport" title="Export full diagnostic report as Markdown file">
+          <span>&#128196;</span> EXPORT
+        </button>
+        <button class="btn-scan" id="btnScan" title="Run all checkers sequentially and update dashboard results">
+          <span class="btn-scan-icon">&#9654;</span>
+          <span class="btn-scan-text">INITIATE SCAN</span>
+        </button>
+      </div>
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="status-stats">
+      <span class="stat" id="statPass"><span class="stat-num">—</span> PASS</span>
+      <span class="stat-sep">&middot;</span>
+      <span class="stat" id="statWarn"><span class="stat-num">—</span> WARN</span>
+      <span class="stat-sep">&middot;</span>
+      <span class="stat" id="statFail"><span class="stat-num">—</span> FAIL</span>
+      <span class="stat-sep stretch"></span>
+      <span class="stat" id="statDuration"></span>
+    </div>
+    <div class="status-description" id="statusDescription"></div>
+    <!-- AI Overview panel — LLM full scan summary -->
+    <div class="ai-overview-panel" id="aiOverviewPanel" style="display:none">
+      <div class="ai-overview-header">
+        <span>&#x1F9E0; AI &#xC804;&#xCCB4; &#xBD84;&#xC11D;</span>
+        <button class="ai-overview-close" id="aiOverviewClose">&times;</button>
+      </div>
+      <div class="ai-overview-content" id="aiOverviewContent"></div>
+    </div>
+  </section>
+
+  <!-- Agent Status Panel (shown only when agent is enabled) -->
+  {% if agent_enabled %}
+  <section class="agent-panel" id="agentPanel">
+    <div class="agent-header">
+      <span class="agent-icon">&#x1F916;</span>
+      <span class="agent-title">AGENT</span>
+      <span class="agent-state" id="agentState">{{ agent_state|upper }}</span>
+      <div class="agent-controls">
+        <button class="btn-agent" id="btnAgentToggle" title="Start or stop the autonomous agent loop (Observe → Reason → Act cycle)">
+          <span id="agentToggleIcon">&#9654;</span>
+        </button>
+        <button class="btn-agent" id="btnAgentScan" title="Queue a scan via the agent — runs only affected checkers based on file changes">SCAN</button>
+      </div>
+      <!-- GPT Review #6 UI: Observer status badge -->
+      <span class="agent-observer-badge" id="agentObserverBadge" title="File system watcher (watchdog) — monitors project files for changes and triggers auto-scans">
+        <span id="observerIcon">&#x1F441;</span>
+        <span id="observerLabel">Watcher</span>
+      </span>
+      <div class="agent-llm-badge" id="agentLlmBadge" style="display:none" title="LLM analysis cost tracker — cumulative spending for today">
+        <span class="llm-icon">&#x1F4A1;</span>
+        <span class="llm-cost" id="llmCostBadge">$0.00</span>
+      </div>
+      <button class="btn-llm-config" id="btnLlmConfig" title="Select LLM model, set API key, and configure analysis parameters">
+        <span class="btn-llm-config-icon">&#x1F4A1;</span>
+        <span class="btn-llm-config-label">LLM CONFIG</span>
+      </button>
+    </div>
+    <div class="agent-state-description" id="agentStateDescription"></div>
+    <!-- GPT Review #7-2: notification banner area with priority stacking -->
+    <div class="agent-notification-area" id="agentNotificationArea"></div>
+    <div class="agent-event-log" id="agentEventLog">
+      <div class="agent-log-empty">Agent events will appear here...</div>
+    </div>
+    <div class="agent-llm-panel" id="agentLLMPanel" style="display:none">
+      <div class="llm-panel-header">
+        <span>&#x1F4A1; LLM ANALYSIS</span>
+        <button class="llm-panel-close" id="llmPanelClose">&times;</button>
+      </div>
+      <div class="llm-panel-content" id="llmPanelContent"></div>
+    </div>
+  </section>
+
+  <!-- GPT Review #7-8: Agent Timeline panel (unified event/scan/analysis view) -->
+  <section class="agent-timeline-section" id="agentTimelineSection" style="display:none">
+    <div class="section-header">
+      <span class="section-icon">&#9672;</span>
+      <span>AGENT TIMELINE</span>
+      <div class="timeline-controls">
+        <select class="timeline-filter" id="timelineFilterType">
+          <option value="all">All Events</option>
+          <option value="scan_completed">Scans</option>
+          <option value="llm_analysis_completed">LLM Analyses</option>
+          <option value="insight_generated">Insights</option>
+          <option value="file_changed">File Changes</option>
+        </select>
+        <select class="timeline-filter" id="timelineFilterSeverity">
+          <option value="all">All Severity</option>
+          <option value="critical">Critical</option>
+          <option value="high">High</option>
+          <option value="info">Info</option>
+        </select>
+        <button class="btn-timeline-refresh" id="btnTimelineRefresh" title="Refresh timeline">&#x21BB;</button>
+      </div>
+    </div>
+    <div class="timeline-list" id="timelineList">
+      <div class="timeline-empty">Loading timeline...</div>
+    </div>
+    <button class="btn-timeline-more" id="btnTimelineMore" style="display:none">Load More</button>
+  </section>
+  {% endif %}
+
+  <!-- Agent Monitor Panel (shown only when monitor is enabled) -->
+  {% if monitor_enabled %}
+  <section class="monitor-panel" id="monitorPanel">
+    <div class="monitor-header">
+      <span class="monitor-icon">&#x1F50D;</span>
+      <span class="monitor-title">AGENT MONITOR</span>
+      <div class="monitor-status-dots">
+        <span class="monitor-dot-wrap" title="Main Service">
+          <span class="monitor-dot" id="monDotService"></span>
+          <span class="monitor-dot-label">SVC</span>
+        </span>
+        <span class="monitor-dot-wrap" title="Database">
+          <span class="monitor-dot" id="monDotDB"></span>
+          <span class="monitor-dot-label">DB</span>
+        </span>
+        <span class="monitor-dot-wrap" title="SSE Stream">
+          <span class="monitor-dot" id="monDotSSE"></span>
+          <span class="monitor-dot-label">SSE</span>
+        </span>
+      </div>
+      <div class="monitor-controls">
+        <button class="btn-monitor" id="btnMonitorRefresh" title="Refresh sessions">&#x21BB;</button>
+        <select class="monitor-filter" id="monFilterStatus">
+          <option value="all">All Status</option>
+          <option value="completed">Completed</option>
+          <option value="exceeded">Exceeded</option>
+          <option value="error">Error</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        <select class="monitor-filter" id="monFilterModel">
+          <option value="all">All Models</option>
+        </select>
+      </div>
+    </div>
+    <div class="monitor-stats" id="monitorStats">
+      <span class="monitor-stat">
+        <span class="monitor-stat-num" id="monStatTotal">--</span> SESSIONS
+      </span>
+      <span class="monitor-stat-sep">&middot;</span>
+      <span class="monitor-stat">
+        $<span class="monitor-stat-num" id="monStatCost">--</span> TOTAL
+      </span>
+      <span class="monitor-stat-sep">&middot;</span>
+      <span class="monitor-stat">
+        <span class="monitor-stat-num" id="monStatToday">--</span> TODAY
+      </span>
+      <span class="monitor-stat-sep">&middot;</span>
+      <span class="monitor-stat">
+        <span class="monitor-stat-num" id="monStatRate">--</span>% SUCCESS
+      </span>
+    </div>
+
+    <!-- Live processing feed (auto-shown when extraction detected) -->
+    <div class="live-feed" id="liveFeed" style="display:none">
+      <div class="live-feed-header">
+        <span class="live-indicator">
+          <span class="live-dot"></span> LIVE
+        </span>
+        <span class="live-title" id="liveTitle"></span>
+        <span class="live-elapsed" id="liveElapsed"></span>
+      </div>
+      <div class="live-progress-wrap">
+        <div class="live-progress-bar">
+          <div class="live-progress-fill" id="liveProgressFill"></div>
+        </div>
+        <span class="live-progress-pct" id="liveProgressPct">0%</span>
+      </div>
+      <div class="live-step-current" id="liveStepCurrent"></div>
+      <div class="live-timeline" id="liveTimeline"></div>
+    </div>
+
+    <!-- Session list view -->
+    <div class="monitor-session-list" id="monSessionList">
+      <div class="monitor-loading">Connecting to main service...</div>
+    </div>
+    <button class="btn-monitor-more" id="btnMonitorMore" style="display:none">Load More</button>
+
+    <!-- Session detail view (hidden by default) -->
+    <div class="monitor-detail" id="monDetail" style="display:none">
+      <div class="monitor-detail-header">
+        <button class="monitor-back" id="monBack">&larr; Back</button>
+        <span class="monitor-detail-title" id="monDetailTitle"></span>
+        <span class="monitor-detail-badge" id="monDetailBadge"></span>
+      </div>
+      <div class="monitor-detail-meta" id="monDetailMeta"></div>
+      <div class="monitor-budget" id="monBudget">
+        <div class="budget-bar">
+          <label>Tool Calls</label>
+          <div class="budget-track"><div class="budget-fill" id="budgetToolFill"></div></div>
+          <span class="budget-value" id="budgetToolVal"></span>
+        </div>
+        <div class="budget-bar">
+          <label>Tokens</label>
+          <div class="budget-track"><div class="budget-fill" id="budgetTokenFill"></div></div>
+          <span class="budget-value" id="budgetTokenVal"></span>
+        </div>
+        <div class="budget-bar">
+          <label>Cost</label>
+          <div class="budget-track"><div class="budget-fill" id="budgetCostFill"></div></div>
+          <span class="budget-value" id="budgetCostVal"></span>
+        </div>
+        <div class="budget-bar">
+          <label>Duration</label>
+          <div class="budget-track"><div class="budget-fill" id="budgetDurFill"></div></div>
+          <span class="budget-value" id="budgetDurVal"></span>
+        </div>
+      </div>
+      <div class="monitor-timeline-title">Tool Invocations</div>
+      <div class="monitor-timeline" id="monTimeline"></div>
+    </div>
+  </section>
+  {% endif %}
+
+  <!-- Phase cards grid -->
+  <section class="phase-grid" id="phaseGrid">
+    {% for p in phases %}
+    <div class="phase-card" data-phase="{{ p.name }}" data-tip-why="{{ p.tooltip_why }}" data-tip-what="{{ p.tooltip_what }}" data-tip-result="{{ p.tooltip_result }}" id="card-{{ p.name }}">
+      <div class="card-header">
+        <span class="card-icon">{{ p.icon }}</span>
+        <span class="card-name">{{ p.display_name }}</span>
+      </div>
+      <div class="card-body">
+        <div class="card-counts">
+          <span class="card-pass">—</span> / <span class="card-total">—</span>
+          <span class="card-badge">&#8943;</span>
+        </div>
+        <div class="card-bar-track">
+          <div class="card-bar-fill"></div>
+        </div>
+      </div>
+      <div class="card-status-text">READY</div>
+    </div>
+    {% endfor %}
+  </section>
+
+  <!-- Health timeline chart -->
+  <section class="chart-section">
+    <div class="section-header">
+      <span class="section-icon">&#9672;</span>
+      <span>HEALTH TIMELINE</span>
+    </div>
+    <canvas id="healthChart" width="900" height="180"></canvas>
+  </section>
+
+  <!-- Scan history table -->
+  <section class="history-section">
+    <div class="section-header">
+      <span class="section-icon">&#9672;</span>
+      <span>SCAN LOG</span>
+    </div>
+    <div class="history-table-wrap">
+      <table class="history-table" id="historyTable">
+        <thead>
+          <tr>
+            <th>TIMESTAMP</th>
+            <th>STATUS</th>
+            <th>PASS</th>
+            <th>WARN</th>
+            <th>FAIL</th>
+            <th>HEALTH</th>
+            <th>DURATION</th>
+          </tr>
+        </thead>
+        <tbody id="historyBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- Phase detail modal -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" id="phaseModal">
+      <div class="modal-header">
+        <span class="modal-icon" id="modalIcon"></span>
+        <span class="modal-title" id="modalTitle"></span>
+        <button class="modal-close" id="modalClose">&times;</button>
+      </div>
+      <div class="modal-summary" id="modalSummary"></div>
+      <div class="modal-progress-track">
+        <div class="modal-progress-fill" id="modalProgressFill"></div>
+      </div>
+      <div class="modal-checks" id="modalChecks"></div>
+    </div>
+  </div>
+
+  <!-- Tooltip -->
+  <div class="tooltip" id="tooltip"></div>
+
+  <!-- Workspace manager modal -->
+  <div class="modal-backdrop" id="wsModalBackdrop">
+    <div class="modal ws-modal" id="wsModal">
+      <div class="modal-header">
+        <span class="modal-icon">&#9881;</span>
+        <span class="modal-title">WORKSPACE MANAGER</span>
+        <button class="modal-close" id="wsModalClose">&times;</button>
+      </div>
+      <div class="ws-add-row">
+        <input type="text" id="wsPathInput" class="ws-path-input"
+               placeholder="/path/to/project" spellcheck="false">
+        <button class="btn-ws-browse" id="btnWsBrowse" title="Browse folders">&#128193;</button>
+        <button class="btn-ws-add" id="btnWsAdd">+ ADD</button>
+      </div>
+      <div class="ws-add-status" id="wsAddStatus"></div>
+      <!-- Folder browser -->
+      <div class="ws-browser" id="wsBrowser">
+        <div class="ws-browser-bar">
+          <button class="ws-browser-up" id="wsBrowserUp" title="Parent directory">&#8679;</button>
+          <span class="ws-browser-path" id="wsBrowserPath">/</span>
+        </div>
+        <div class="ws-browser-list" id="wsBrowserList"></div>
+      </div>
+      <div class="ws-list" id="wsList"></div>
+    </div>
+  </div>
+
+  <!-- LLM Configuration Modal -->
+  <div class="modal-backdrop" id="llmConfigBackdrop">
+    <div class="modal llm-config-modal" id="llmConfigModal">
+      <div class="modal-header">
+        <span class="modal-icon">&#x1F4A1;</span>
+        <span class="modal-title">LLM CONFIGURATION</span>
+        <button class="modal-close" id="llmConfigClose">&times;</button>
+      </div>
+      <div class="llm-config-body">
+        <!-- Model selection -->
+        <div class="llm-field">
+          <label class="llm-label">Model <span class="llm-hint">LiteLLM format (empty = disabled)</span></label>
+          <input type="text" class="llm-input" id="llmModel" placeholder="anthropic/claude-sonnet-4-20250514" spellcheck="false">
+          <div class="llm-presets" id="llmPresets">
+            <button class="llm-preset" data-model="anthropic/claude-sonnet-4-20250514">Claude Sonnet</button>
+            <button class="llm-preset" data-model="anthropic/claude-haiku-4-20250414">Claude Haiku</button>
+            <button class="llm-preset" data-model="openai/gpt-4o">GPT-4o</button>
+            <button class="llm-preset" data-model="openai/gpt-4o-mini">GPT-4o Mini</button>
+            <button class="llm-preset" data-model="gemini/gemini-2.0-flash">Gemini Flash</button>
+            <button class="llm-preset" data-model="gemini/gemini-2.5-flash-preview-09-2025">Gemini 2.5 Flash</button>
+            <button class="llm-preset" data-model="deepseek/deepseek-chat">DeepSeek Chat</button>
+            <button class="llm-preset" data-model="deepseek/deepseek-reasoner">DeepSeek Reasoner</button>
+            <button class="llm-preset" data-model="ollama/llama3">Ollama Llama3</button>
+          </div>
+        </div>
+        <div class="llm-field">
+          <label class="llm-label">Fallback Model <span class="llm-hint">optional — used if primary fails</span></label>
+          <input type="text" class="llm-input" id="llmFallback" placeholder="ollama/llama3" spellcheck="false">
+        </div>
+        <div class="llm-field">
+          <label class="llm-label">API Key <span class="llm-hint">직접 입력 — 서버 메모리에만 보관, config 파일에 저장되지 않음</span></label>
+          <div class="llm-input-group">
+            <input type="password" class="llm-input llm-input-key" id="llmApiKey" placeholder="sk-... / AIza... (입력 후 SAVE)" spellcheck="false" autocomplete="off">
+            <button class="llm-key-toggle" id="llmKeyToggle" type="button" title="Show/hide API key">&#x1F441;</button>
+          </div>
+          <div class="llm-key-status" id="llmKeyStatus"></div>
+        </div>
+        <div class="llm-field-row">
+          <div class="llm-field llm-field-half">
+            <label class="llm-label">Temperature</label>
+            <input type="number" class="llm-input" id="llmTemperature" min="0" max="2" step="0.1" value="0.3">
+          </div>
+          <div class="llm-field llm-field-half">
+            <label class="llm-label">Max Tokens</label>
+            <input type="number" class="llm-input" id="llmMaxTokens" min="100" max="32000" step="100" value="2000">
+          </div>
+        </div>
+        <div class="llm-field-row">
+          <div class="llm-field llm-field-half">
+            <label class="llm-label">Timeout (sec)</label>
+            <input type="number" class="llm-input" id="llmTimeout" min="5" max="300" step="5" value="30">
+          </div>
+          <div class="llm-field llm-field-half">
+            <label class="llm-label">Daily Budget ($)</label>
+            <input type="number" class="llm-input" id="llmBudget" min="0" max="100" step="0.5" value="5.0">
+          </div>
+        </div>
+        <!-- LLM capabilities info -->
+        <div class="llm-capabilities">
+          <div class="llm-cap-title">&#x1F4A1; LLM 분석 기능</div>
+          <div class="llm-cap-item">
+            <span class="llm-cap-icon">&#x1F50D;</span>
+            <div>
+              <strong>DEEP ANALYZE</strong> — 체커 FAIL/WARN 발생 시, 근본 원인 분석 + 수정 방안 제시<br>
+              <span class="llm-cap-detail">페이즈 카드 클릭 → 모달에서 "DEEP ANALYZE" 버튼으로 실행</span>
+            </div>
+          </div>
+          <div class="llm-cap-item">
+            <span class="llm-cap-icon">&#x1F4CA;</span>
+            <div>
+              <strong>Report Generation</strong> — 전체 스캔 결과를 자연어로 종합 요약<br>
+              <span class="llm-cap-detail">건강도 평가, 즉시 조치 사항, 패턴 분석, 우선순위 권장</span>
+            </div>
+          </div>
+          <div class="llm-cap-item">
+            <span class="llm-cap-icon">&#x26A1;</span>
+            <div>
+              <strong>Auto-Escalation</strong> — CRITICAL 상태 시 자동으로 LLM 분석 트리거<br>
+              <span class="llm-cap-detail">config의 <code>auto_llm_on_critical: true</code>로 활성화</span>
+            </div>
+          </div>
+        </div>
+        <!-- Status + save -->
+        <div class="llm-status" id="llmConfigStatus"></div>
+        <div class="llm-actions">
+          <button class="btn-llm-save" id="btnLlmSave">SAVE &amp; APPLY</button>
+          <button class="btn-llm-clear" id="btnLlmClear" title="Clear model to disable LLM">DISABLE LLM</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    window.__DD_DEFAULT_WS = "{{ default_ws_id }}";
+    window.__DD_AGENT_ENABLED = {{ 'true' if agent_enabled else 'false' }};
+    window.__DD_AGENT_STATE = "{{ agent_state }}";
+    window.__DD_MONITOR_ENABLED = {{ 'true' if monitor_enabled else 'false' }};
+  </script>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>
