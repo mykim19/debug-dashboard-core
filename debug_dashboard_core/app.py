@@ -52,6 +52,43 @@ def _make_ws_id(config_path: Path) -> str:
     return hashlib.sha1(str(config_path.resolve()).encode()).hexdigest()[:10]
 
 
+# ── Workspace Persistence ─────────────────────────────
+
+def _ws_registry_path(config_path: Path) -> Path:
+    """Return path to workspaces.json (sibling of primary config)."""
+    return config_path.parent / "workspaces.json"
+
+
+def _load_saved_workspaces(config_path: Path) -> List[str]:
+    """Load extra workspace config paths from workspaces.json."""
+    reg = _ws_registry_path(config_path)
+    if not reg.exists():
+        return []
+    try:
+        data = json.loads(reg.read_text(encoding="utf-8"))
+        return [p for p in data.get("extra_workspaces", []) if Path(p).exists()]
+    except Exception:
+        return []
+
+
+def _save_workspace_registry(config_path: Path, workspaces: Dict[str, dict],
+                              default_ws_id: str) -> None:
+    """Persist extra workspace config paths to workspaces.json."""
+    extras = []
+    for ws_id, ws in workspaces.items():
+        if ws_id == default_ws_id:
+            continue  # primary workspace is always loaded from CLI
+        cfg_path = ws.get("config_path")
+        if cfg_path:
+            extras.append(str(cfg_path))
+
+    reg = _ws_registry_path(config_path)
+    reg.write_text(json.dumps({
+        "extra_workspaces": extras,
+        "_note": "Auto-managed by Debug Dashboard. Persists UI-added workspaces across restarts."
+    }, indent=2, ensure_ascii=False), encoding="utf-8")
+
+
 # ── Workspace Loading ──────────────────────────────────
 
 def _load_workspace(config_path: Path, defaults: dict) -> dict:
@@ -184,7 +221,14 @@ def create_app(config_path: str, db_path: str = None,
 
     workspaces: Dict[str, dict] = {main_ws["id"]: main_ws}
 
-    for extra_path in (extra_workspaces or []):
+    # Merge CLI extra workspaces + persisted workspaces (from workspaces.json)
+    all_extras = list(extra_workspaces or [])
+    saved_extras = _load_saved_workspaces(config_path)
+    for sp in saved_extras:
+        if sp not in all_extras:
+            all_extras.append(sp)
+
+    for extra_path in all_extras:
         try:
             ws = _load_workspace(Path(extra_path), defaults)
             workspaces[ws["id"]] = ws
@@ -208,6 +252,8 @@ def create_app(config_path: str, db_path: str = None,
     app.config["WORKSPACES"] = workspaces
     app.config["DEFAULT_WORKSPACE"] = main_ws["id"]
     app.config["REGISTRIES"] = {}  # ws_id → list of checker instances (lazy init)
+    app.config["MONITOR_CONNECTORS"] = {}  # ws_id → MainServiceConnector (per-workspace)
+    app.config["_PRIMARY_CONFIG_PATH"] = str(config_path)  # for workspace persistence
 
     # ── Workspace helpers (request-scoped) ──
 
@@ -266,9 +312,9 @@ def create_app(config_path: str, db_path: str = None,
         agent_loop = app.config.get("AGENT_LOOPS", {}).get(current_id)
         agent_state = agent_loop.state.value if agent_loop else "disabled"
 
-        # Monitor status for template
-        monitor_conn = app.config.get("MONITOR_CONNECTOR")
-        monitor_on = monitor_conn is not None
+        # Monitor status for template (per-workspace)
+        monitor_connectors = app.config.get("MONITOR_CONNECTORS", {})
+        monitor_on = current_id in monitor_connectors
 
         return render_template("dashboard.html",
                                project_name=ws["name"],
@@ -283,12 +329,14 @@ def create_app(config_path: str, db_path: str = None,
     def api_workspaces():
         """List all workspaces and current selection."""
         current_id = _current_ws_id()
+        connectors = app.config.get("MONITOR_CONNECTORS", {})
         ws_list = []
         for wid, w in app.config["WORKSPACES"].items():
             ws_list.append({
                 "id": wid,
                 "name": w["name"],
                 "root": str(w["project_root"]),
+                "monitor_enabled": wid in connectors,
             })
         return jsonify({"success": True, "current": current_id, "workspaces": ws_list})
 
@@ -411,6 +459,20 @@ def create_app(config_path: str, db_path: str = None,
         try:
             ws = _load_workspace(config_path, defaults)
             app.config["WORKSPACES"][ws["id"]] = ws
+
+            # ── Persist to workspaces.json ──
+            try:
+                _save_workspace_registry(
+                    config_path=Path(app.config["_PRIMARY_CONFIG_PATH"]),
+                    workspaces=app.config["WORKSPACES"],
+                    default_ws_id=app.config["DEFAULT_WORKSPACE"],
+                )
+            except Exception as pe:
+                print(f"[workspace] ⚠ Persist failed: {pe}")
+
+            # ── Initialize monitor connector if workspace has monitor config ──
+            _maybe_init_monitor_for_ws(app, ws)
+
             print(f"[workspace] ✓ Added at runtime: {ws['name']} [{ws['id']}]")
             return jsonify({"success": True, "workspace": {
                 "id": ws["id"], "name": ws["name"],
@@ -434,6 +496,24 @@ def create_app(config_path: str, db_path: str = None,
         ws = app.config["WORKSPACES"].pop(ws_id)
         # Also remove cached registry
         app.config["REGISTRIES"].pop(ws_id, None)
+        # Stop and remove monitor connector for this workspace
+        connectors = app.config.get("MONITOR_CONNECTORS", {})
+        if ws_id in connectors:
+            try:
+                connectors[ws_id].stop()
+            except Exception:
+                pass
+            del connectors[ws_id]
+
+        # ── Persist removal to workspaces.json ──
+        try:
+            _save_workspace_registry(
+                config_path=Path(app.config["_PRIMARY_CONFIG_PATH"]),
+                workspaces=app.config["WORKSPACES"],
+                default_ws_id=app.config["DEFAULT_WORKSPACE"],
+            )
+        except Exception:
+            pass
 
         print(f"[workspace] ✗ Removed: {ws['name']} [{ws_id}]")
         return jsonify({"success": True, "removed": ws_id, "name": ws["name"]})
@@ -1151,31 +1231,59 @@ def create_app(config_path: str, db_path: str = None,
         except Exception as e:
             print(f"[agent] ⚠ Agent init error for '{ws['name']}': {e}")
 
-    # ── Monitor integration (conditional, config-driven) ──────────
-    # Reads main service's scripts.db (read-only) for agent session monitoring.
-    # Zero overhead when monitor.enabled: false.
-    monitor_connector = None
-    main_ws = workspaces.get(app.config["DEFAULT_WORKSPACE"], {})
-    monitor_enabled_cfg = main_ws.get("config", {}).get("monitor", {}).get("enabled", False)
+    # ── Monitor integration (per-workspace, config-driven) ──────────
+    # Each workspace with monitor.enabled: true gets its own MainServiceConnector.
+    # Blueprint registered once; connector lookup is workspace-aware.
 
-    if monitor_enabled_cfg:
+    def _maybe_init_monitor_for_ws(the_app, ws):
+        """Create a MainServiceConnector for a workspace if monitor config exists.
+
+        Called at startup for all workspaces, and at runtime when adding a workspace.
+        Idempotent: skips if connector already exists for this workspace.
+        Also lazily registers the monitor blueprint if not yet registered.
+        """
+        ws_id = ws["id"]
+        connectors = the_app.config["MONITOR_CONNECTORS"]
+        if ws_id in connectors:
+            return connectors[ws_id]  # already initialized
+
+        monitor_cfg = ws.get("config", {}).get("monitor", {})
+        if not monitor_cfg.get("enabled", False):
+            return None
+
         try:
             from .live_monitor import MainServiceConnector
-            from .monitor_routes import monitor_bp, init_monitor_blueprint
 
-            connector = MainServiceConnector(main_ws["config"])
+            connector = MainServiceConnector(ws["config"])
             connector.start()
+            connectors[ws_id] = connector
 
-            init_monitor_blueprint(connector)
-            app.register_blueprint(monitor_bp)
-            monitor_connector = connector
-            app.config["MONITOR_CONNECTOR"] = connector
+            # Lazily register monitor blueprint if not yet done
+            if not the_app.config.get("_MONITOR_BP_REGISTERED"):
+                try:
+                    from .monitor_routes import monitor_bp, init_monitor_blueprint
+                    init_monitor_blueprint(the_app)
+                    the_app.register_blueprint(monitor_bp)
+                    the_app.config["_MONITOR_BP_REGISTERED"] = True
+                except Exception as bp_err:
+                    print(f"[monitor] Blueprint registration failed: {bp_err}")
 
-            print(f"[monitor] Main service monitor enabled")
-            print(f"[monitor]   URL: {connector.base_url}")
-            print(f"[monitor]   DB: {'available' if connector.db_readable else 'not found'}")
+            db_status = "available" if connector.db_readable else "not found"
+            print(f"[monitor:{ws_id[:6]}] ✓ Connector for '{ws['name']}' — DB: {db_status}")
+            return connector
         except Exception as e:
-            print(f"[monitor] Monitor init failed: {e}")
+            print(f"[monitor:{ws_id[:6]}] ⚠ Init failed for '{ws['name']}': {e}")
+            return None
+
+    # Initialize connectors for all workspaces with monitor.enabled
+    app.config["_MONITOR_BP_REGISTERED"] = False
+    for ws_id, ws in workspaces.items():
+        _maybe_init_monitor_for_ws(app, ws)
+
+    # Legacy compat: also set MONITOR_CONNECTOR for any code referencing it
+    default_ws_id = app.config["DEFAULT_WORKSPACE"]
+    if default_ws_id in app.config["MONITOR_CONNECTORS"]:
+        app.config["MONITOR_CONNECTOR"] = app.config["MONITOR_CONNECTORS"][default_ws_id]
 
     return app
 

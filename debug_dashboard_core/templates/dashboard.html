@@ -81,8 +81,9 @@
 
   <!-- Agent Status Panel (shown only when agent is enabled) -->
   {% if agent_enabled %}
-  <section class="agent-panel" id="agentPanel">
+  <section class="agent-panel collapsible-section" id="agentPanel" data-fold-key="agent">
     <div class="agent-header">
+      <button class="section-toggle" data-fold-btn="agent" title="Toggle section"><span class="toggle-arrow">&#x25BE;</span></button>
       <span class="agent-icon">&#x1F916;</span>
       <span class="agent-title">AGENT</span>
       <span class="agent-state" id="agentState">{{ agent_state|upper }}</span>
@@ -106,24 +107,27 @@
         <span class="btn-llm-config-label">LLM CONFIG</span>
       </button>
     </div>
-    <div class="agent-state-description" id="agentStateDescription"></div>
-    <!-- GPT Review #7-2: notification banner area with priority stacking -->
-    <div class="agent-notification-area" id="agentNotificationArea"></div>
-    <div class="agent-event-log" id="agentEventLog">
-      <div class="agent-log-empty">Agent events will appear here...</div>
-    </div>
-    <div class="agent-llm-panel" id="agentLLMPanel" style="display:none">
-      <div class="llm-panel-header">
-        <span>&#x1F4A1; LLM ANALYSIS</span>
-        <button class="llm-panel-close" id="llmPanelClose">&times;</button>
+    <div class="section-body" data-fold-body="agent">
+      <div class="agent-state-description" id="agentStateDescription"></div>
+      <!-- GPT Review #7-2: notification banner area with priority stacking -->
+      <div class="agent-notification-area" id="agentNotificationArea"></div>
+      <div class="agent-event-log" id="agentEventLog">
+        <div class="agent-log-empty">Agent events will appear here...</div>
       </div>
-      <div class="llm-panel-content" id="llmPanelContent"></div>
+      <div class="agent-llm-panel" id="agentLLMPanel" style="display:none">
+        <div class="llm-panel-header">
+          <span>&#x1F4A1; LLM ANALYSIS</span>
+          <button class="llm-panel-close" id="llmPanelClose">&times;</button>
+        </div>
+        <div class="llm-panel-content" id="llmPanelContent"></div>
+      </div>
     </div>
   </section>
 
   <!-- GPT Review #7-8: Agent Timeline panel (unified event/scan/analysis view) -->
-  <section class="agent-timeline-section" id="agentTimelineSection" style="display:none">
+  <section class="agent-timeline-section collapsible-section" id="agentTimelineSection" data-fold-key="timeline" style="display:none">
     <div class="section-header">
+      <button class="section-toggle" data-fold-btn="timeline" title="Toggle section"><span class="toggle-arrow">&#x25BE;</span></button>
       <span class="section-icon">&#9672;</span>
       <span>AGENT TIMELINE</span>
       <div class="timeline-controls">
@@ -143,17 +147,20 @@
         <button class="btn-timeline-refresh" id="btnTimelineRefresh" title="Refresh timeline">&#x21BB;</button>
       </div>
     </div>
-    <div class="timeline-list" id="timelineList">
-      <div class="timeline-empty">Loading timeline...</div>
+    <div class="section-body" data-fold-body="timeline">
+      <div class="timeline-list" id="timelineList">
+        <div class="timeline-empty">Loading timeline...</div>
+      </div>
+      <button class="btn-timeline-more" id="btnTimelineMore" style="display:none">Load More</button>
     </div>
-    <button class="btn-timeline-more" id="btnTimelineMore" style="display:none">Load More</button>
   </section>
   {% endif %}
 
   <!-- Agent Monitor Panel (shown only when monitor is enabled) -->
   {% if monitor_enabled %}
-  <section class="monitor-panel" id="monitorPanel">
+  <section class="monitor-panel collapsible-section" id="monitorPanel" data-fold-key="monitor">
     <div class="monitor-header">
+      <button class="section-toggle" data-fold-btn="monitor" title="Toggle section"><span class="toggle-arrow">&#x25BE;</span></button>
       <span class="monitor-icon">&#x1F50D;</span>
       <span class="monitor-title">AGENT MONITOR</span>
       <div class="monitor-status-dots">
@@ -184,137 +191,174 @@
         </select>
       </div>
     </div>
-    <div class="monitor-stats" id="monitorStats">
-      <span class="monitor-stat">
-        <span class="monitor-stat-num" id="monStatTotal">--</span> SESSIONS
-      </span>
-      <span class="monitor-stat-sep">&middot;</span>
-      <span class="monitor-stat">
-        $<span class="monitor-stat-num" id="monStatCost">--</span> TOTAL
-      </span>
-      <span class="monitor-stat-sep">&middot;</span>
-      <span class="monitor-stat">
-        <span class="monitor-stat-num" id="monStatToday">--</span> TODAY
-      </span>
-      <span class="monitor-stat-sep">&middot;</span>
-      <span class="monitor-stat">
-        <span class="monitor-stat-num" id="monStatRate">--</span>% SUCCESS
-      </span>
-    </div>
-
-    <!-- Live processing feed (auto-shown when extraction detected) -->
-    <div class="live-feed" id="liveFeed" style="display:none">
-      <div class="live-feed-header">
-        <span class="live-indicator">
-          <span class="live-dot"></span> LIVE
+    <div class="section-body" data-fold-body="monitor">
+      <div class="monitor-stats" id="monitorStats">
+        <span class="monitor-stat">
+          <span class="monitor-stat-num" id="monStatTotal">--</span> SESSIONS
         </span>
-        <span class="live-title" id="liveTitle"></span>
-        <span class="live-elapsed" id="liveElapsed"></span>
+        <span class="monitor-stat-sep">&middot;</span>
+        <span class="monitor-stat">
+          $<span class="monitor-stat-num" id="monStatCost">--</span> TOTAL
+        </span>
+        <span class="monitor-stat-sep">&middot;</span>
+        <span class="monitor-stat">
+          <span class="monitor-stat-num" id="monStatToday">--</span> TODAY
+        </span>
+        <span class="monitor-stat-sep">&middot;</span>
+        <span class="monitor-stat">
+          <span class="monitor-stat-num" id="monStatRate">--</span>% SUCCESS
+        </span>
       </div>
-      <div class="live-progress-wrap">
-        <div class="live-progress-bar">
-          <div class="live-progress-fill" id="liveProgressFill"></div>
-        </div>
-        <span class="live-progress-pct" id="liveProgressPct">0%</span>
-      </div>
-      <div class="live-step-current" id="liveStepCurrent"></div>
-      <div class="live-timeline" id="liveTimeline"></div>
-    </div>
 
-    <!-- Session list view -->
-    <div class="monitor-session-list" id="monSessionList">
-      <div class="monitor-loading">Connecting to main service...</div>
-    </div>
-    <button class="btn-monitor-more" id="btnMonitorMore" style="display:none">Load More</button>
+      <!-- Live processing feed (auto-shown when extraction detected) -->
+      <div class="live-feed" id="liveFeed" style="display:none">
+        <div class="live-feed-header">
+          <span class="live-indicator">
+            <span class="live-dot"></span> LIVE
+          </span>
+          <span class="live-title" id="liveTitle"></span>
+          <span class="live-elapsed" id="liveElapsed"></span>
+        </div>
+        <div class="live-progress-wrap">
+          <div class="live-progress-bar">
+            <div class="live-progress-fill" id="liveProgressFill"></div>
+          </div>
+          <span class="live-progress-pct" id="liveProgressPct">0%</span>
+        </div>
+        <div class="live-step-current" id="liveStepCurrent"></div>
+        <div class="live-timeline" id="liveTimeline"></div>
+      </div>
 
-    <!-- Session detail view (hidden by default) -->
-    <div class="monitor-detail" id="monDetail" style="display:none">
-      <div class="monitor-detail-header">
-        <button class="monitor-back" id="monBack">&larr; Back</button>
-        <span class="monitor-detail-title" id="monDetailTitle"></span>
-        <span class="monitor-detail-badge" id="monDetailBadge"></span>
+      <!-- Session list view -->
+      <div class="monitor-session-list" id="monSessionList">
+        <div class="monitor-loading">Connecting to main service...</div>
       </div>
-      <div class="monitor-detail-meta" id="monDetailMeta"></div>
-      <div class="monitor-budget" id="monBudget">
-        <div class="budget-bar">
-          <label>Tool Calls</label>
-          <div class="budget-track"><div class="budget-fill" id="budgetToolFill"></div></div>
-          <span class="budget-value" id="budgetToolVal"></span>
+      <button class="btn-monitor-more" id="btnMonitorMore" style="display:none">Load More</button>
+
+      <!-- Session detail view (hidden by default) -->
+      <div class="monitor-detail" id="monDetail" style="display:none">
+        <div class="monitor-detail-header">
+          <button class="monitor-back" id="monBack">&larr; Back</button>
+          <span class="monitor-detail-title" id="monDetailTitle"></span>
+          <span class="monitor-detail-badge" id="monDetailBadge"></span>
         </div>
-        <div class="budget-bar">
-          <label>Tokens</label>
-          <div class="budget-track"><div class="budget-fill" id="budgetTokenFill"></div></div>
-          <span class="budget-value" id="budgetTokenVal"></span>
+        <div class="monitor-detail-meta" id="monDetailMeta"></div>
+        <div class="monitor-budget" id="monBudget">
+          <div class="budget-bar">
+            <label>Tool Calls</label>
+            <div class="budget-track"><div class="budget-fill" id="budgetToolFill"></div></div>
+            <span class="budget-value" id="budgetToolVal"></span>
+          </div>
+          <div class="budget-bar">
+            <label>Tokens</label>
+            <div class="budget-track"><div class="budget-fill" id="budgetTokenFill"></div></div>
+            <span class="budget-value" id="budgetTokenVal"></span>
+          </div>
+          <div class="budget-bar">
+            <label>Cost</label>
+            <div class="budget-track"><div class="budget-fill" id="budgetCostFill"></div></div>
+            <span class="budget-value" id="budgetCostVal"></span>
+          </div>
+          <div class="budget-bar">
+            <label>Duration</label>
+            <div class="budget-track"><div class="budget-fill" id="budgetDurFill"></div></div>
+            <span class="budget-value" id="budgetDurVal"></span>
+          </div>
         </div>
-        <div class="budget-bar">
-          <label>Cost</label>
-          <div class="budget-track"><div class="budget-fill" id="budgetCostFill"></div></div>
-          <span class="budget-value" id="budgetCostVal"></span>
-        </div>
-        <div class="budget-bar">
-          <label>Duration</label>
-          <div class="budget-track"><div class="budget-fill" id="budgetDurFill"></div></div>
-          <span class="budget-value" id="budgetDurVal"></span>
-        </div>
+        <div class="monitor-timeline-title">Tool Invocations</div>
+        <div class="monitor-timeline" id="monTimeline"></div>
       </div>
-      <div class="monitor-timeline-title">Tool Invocations</div>
-      <div class="monitor-timeline" id="monTimeline"></div>
     </div>
   </section>
   {% endif %}
 
-  <!-- Phase cards grid -->
-  <section class="phase-grid" id="phaseGrid">
-    {% for p in phases %}
-    <div class="phase-card" data-phase="{{ p.name }}" data-tip-why="{{ p.tooltip_why }}" data-tip-what="{{ p.tooltip_what }}" data-tip-result="{{ p.tooltip_result }}" id="card-{{ p.name }}">
-      <div class="card-header">
-        <span class="card-icon">{{ p.icon }}</span>
-        <span class="card-name">{{ p.display_name }}</span>
-      </div>
-      <div class="card-body">
-        <div class="card-counts">
-          <span class="card-pass">—</span> / <span class="card-total">—</span>
-          <span class="card-badge">&#8943;</span>
-        </div>
-        <div class="card-bar-track">
-          <div class="card-bar-fill"></div>
-        </div>
-      </div>
-      <div class="card-status-text">READY</div>
+  <!-- Architecture Diagram -->
+  <section class="arch-section collapsible-section" id="archSection" data-fold-key="arch" style="display:none">
+    <div class="section-header arch-header">
+      <button class="section-toggle" data-fold-btn="arch" title="Toggle section">
+        <span class="toggle-arrow">&#x25BE;</span>
+      </button>
+      <span class="section-icon">&#9678;</span>
+      <span>ARCHITECTURE</span>
+      <span class="arch-title-detail" id="archTitleDetail"></span>
     </div>
-    {% endfor %}
+    <div class="section-body" data-fold-body="arch">
+      <div class="arch-subtitle" id="archSubtitle"></div>
+      <div class="arch-container" id="archContainer"></div>
+      <div class="arch-legend" id="archLegend"></div>
+    </div>
+  </section>
+
+  <!-- Phase cards grid -->
+  <section class="collapsible-section" data-fold-key="phases">
+    <div class="section-header" style="margin: 0 24px 0; padding-top:4px;">
+      <button class="section-toggle" data-fold-btn="phases" title="Toggle section"><span class="toggle-arrow">&#x25BE;</span></button>
+      <span class="section-icon">&#9672;</span>
+      <span>DIAGNOSTIC PHASES</span>
+      <span class="phase-grid-summary" id="phaseGridSummary">
+        <span class="pg-count" id="pgCountPhases">{{ phases|length }}</span> phases registered
+      </span>
+    </div>
+    <div class="section-body" data-fold-body="phases">
+      <div class="phase-grid" id="phaseGrid">
+        {% for p in phases %}
+        <div class="phase-card" data-phase="{{ p.name }}" data-tip-why="{{ p.tooltip_why }}" data-tip-what="{{ p.tooltip_what }}" data-tip-result="{{ p.tooltip_result }}" id="card-{{ p.name }}">
+          <div class="card-header">
+            <span class="card-icon">{{ p.icon }}</span>
+            <span class="card-name">{{ p.display_name }}</span>
+          </div>
+          <div class="card-body">
+            <div class="card-counts">
+              <span class="card-pass">—</span> / <span class="card-total">—</span>
+              <span class="card-badge">&#8943;</span>
+            </div>
+            <div class="card-bar-track">
+              <div class="card-bar-fill"></div>
+            </div>
+          </div>
+          <div class="card-status-text">READY</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
   </section>
 
   <!-- Health timeline chart -->
-  <section class="chart-section">
+  <section class="chart-section collapsible-section" data-fold-key="chart">
     <div class="section-header">
+      <button class="section-toggle" data-fold-btn="chart" title="Toggle section"><span class="toggle-arrow">&#x25BE;</span></button>
       <span class="section-icon">&#9672;</span>
       <span>HEALTH TIMELINE</span>
     </div>
-    <canvas id="healthChart" width="900" height="180"></canvas>
+    <div class="section-body" data-fold-body="chart">
+      <canvas id="healthChart" width="900" height="180"></canvas>
+    </div>
   </section>
 
   <!-- Scan history table -->
-  <section class="history-section">
+  <section class="history-section collapsible-section" data-fold-key="history">
     <div class="section-header">
+      <button class="section-toggle" data-fold-btn="history" title="Toggle section"><span class="toggle-arrow">&#x25BE;</span></button>
       <span class="section-icon">&#9672;</span>
       <span>SCAN LOG</span>
     </div>
-    <div class="history-table-wrap">
-      <table class="history-table" id="historyTable">
-        <thead>
-          <tr>
-            <th>TIMESTAMP</th>
-            <th>STATUS</th>
-            <th>PASS</th>
-            <th>WARN</th>
-            <th>FAIL</th>
-            <th>HEALTH</th>
-            <th>DURATION</th>
-          </tr>
-        </thead>
-        <tbody id="historyBody"></tbody>
-      </table>
+    <div class="section-body" data-fold-body="history">
+      <div class="history-table-wrap">
+        <table class="history-table" id="historyTable">
+          <thead>
+            <tr>
+              <th>TIMESTAMP</th>
+              <th>STATUS</th>
+              <th>PASS</th>
+              <th>WARN</th>
+              <th>FAIL</th>
+              <th>HEALTH</th>
+              <th>DURATION</th>
+            </tr>
+          </thead>
+          <tbody id="historyBody"></tbody>
+        </table>
+      </div>
     </div>
   </section>
 
@@ -461,6 +505,7 @@
     window.__DD_AGENT_ENABLED = {{ 'true' if agent_enabled else 'false' }};
     window.__DD_AGENT_STATE = "{{ agent_state }}";
     window.__DD_MONITOR_ENABLED = {{ 'true' if monitor_enabled else 'false' }};
+    window.__DD_WS_NAME = "{{ project_name }}";
   </script>
   <script src="/static/js/dashboard.js"></script>
 </body>

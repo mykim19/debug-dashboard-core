@@ -1,5 +1,9 @@
 """Monitor API routes — Flask Blueprint for main service agent monitoring.
 
+Per-workspace connector: each workspace with monitor.enabled: true has its own
+MainServiceConnector. The connector is resolved at request time via the
+dd_workspace cookie.
+
 Endpoints:
     GET  /api/monitor/status           — 3-state connectivity (service, DB, SSE)
     GET  /api/monitor/sessions         — List sessions (keyset pagination)
@@ -14,25 +18,41 @@ Endpoints:
 
 import json
 import time
-from flask import Blueprint, jsonify, request, Response
+from flask import Blueprint, current_app, jsonify, request, Response
 
 monitor_bp = Blueprint("monitor", __name__)
 
-# Set by app.py when monitor mode is active
-_connector = None  # MainServiceConnector instance
+# Reference to the Flask app (set by init_monitor_blueprint)
+_app = None
 
 
-def init_monitor_blueprint(connector):
-    """Initialize with the MainServiceConnector instance."""
-    global _connector
-    _connector = connector
+def init_monitor_blueprint(app):
+    """Initialize with the Flask app reference for per-workspace connector lookup."""
+    global _app
+    _app = app
 
 
-def _check_enabled():
-    """Return error response if monitor is not configured."""
-    if _connector is None:
-        return jsonify({"error": "Monitor not configured"}), 503
-    return None
+def _get_connector():
+    """Resolve the connector for the current workspace (cookie-based).
+
+    Returns (connector, None) on success, or (None, error_response) on failure.
+    """
+    app = _app or current_app._get_current_object()
+    connectors = app.config.get("MONITOR_CONNECTORS", {})
+
+    # Resolve current workspace from cookie
+    ws_id = request.cookies.get("dd_workspace")
+    if not ws_id or ws_id not in app.config.get("WORKSPACES", {}):
+        ws_id = app.config.get("DEFAULT_WORKSPACE", "")
+
+    connector = connectors.get(ws_id)
+    if connector is None:
+        return None, (jsonify({
+            "error": "Monitor not configured for this workspace",
+            "workspace_id": ws_id,
+        }), 503)
+
+    return connector, None
 
 
 # ── Status ────────────────────────────────────────────────────
@@ -40,10 +60,10 @@ def _check_enabled():
 @monitor_bp.route("/api/monitor/status")
 def monitor_status():
     """3-state health: service_online, db_readable, sse_available."""
-    err = _check_enabled()
+    connector, err = _get_connector()
     if err:
         return err
-    return jsonify(_connector.get_status())
+    return jsonify(connector.get_status())
 
 
 # ── Sessions List ─────────────────────────────────────────────
@@ -58,11 +78,11 @@ def monitor_sessions():
         status (str, filter: completed/exceeded/error/cancelled)
         model (str, filter by model_name)
     """
-    err = _check_enabled()
+    connector, err = _get_connector()
     if err:
         return err
 
-    if not _connector.db_reader:
+    if not connector.db_reader:
         return jsonify({"error": "Database not available", "sessions": []}), 503
 
     limit = min(int(request.args.get("limit", 20)), 100)
@@ -70,7 +90,7 @@ def monitor_sessions():
     status = request.args.get("status")
     model = request.args.get("model")
 
-    result = _connector.db_reader.get_sessions(
+    result = connector.db_reader.get_sessions(
         limit=limit, cursor=cursor, status=status, model=model
     )
     return jsonify(result)
@@ -81,14 +101,14 @@ def monitor_sessions():
 @monitor_bp.route("/api/monitor/sessions/<session_id>")
 def monitor_session_detail(session_id):
     """Session detail + tool invocations (loaded on click only)."""
-    err = _check_enabled()
+    connector, err = _get_connector()
     if err:
         return err
 
-    if not _connector.db_reader:
+    if not connector.db_reader:
         return jsonify({"error": "Database not available"}), 503
 
-    detail = _connector.db_reader.get_session_detail(session_id)
+    detail = connector.db_reader.get_session_detail(session_id)
     if not detail:
         return jsonify({"error": "Session not found"}), 404
 
@@ -103,16 +123,16 @@ def monitor_session_events(session_id):
 
     Connects to main service SSE via proxy (1:N broadcast).
     """
-    err = _check_enabled()
+    connector, err = _get_connector()
     if err:
         return err
 
-    if not _connector.service_online:
+    if not connector.service_online:
         return jsonify({"error": "Main service is offline"}), 503
 
     # Get video_id for this session
-    if _connector.db_reader:
-        detail = _connector.db_reader.get_session_detail(session_id)
+    if connector.db_reader:
+        detail = connector.db_reader.get_session_detail(session_id)
         video_id = detail.get("video_id") if detail else None
     else:
         video_id = None
@@ -121,10 +141,10 @@ def monitor_session_events(session_id):
         return jsonify({"error": "Cannot determine video_id for session"}), 404
 
     # Subscribe proxy to main service SSE (idempotent if already subscribed)
-    _connector.sse_proxy.subscribe(video_id)
+    connector.sse_proxy.subscribe(video_id)
 
     # Register this client
-    client_q = _connector.sse_proxy.register_client()
+    client_q = connector.sse_proxy.register_client()
 
     def event_stream():
         try:
@@ -141,7 +161,7 @@ def monitor_session_events(session_id):
         except GeneratorExit:
             pass
         finally:
-            _connector.sse_proxy.unregister_client(client_q)
+            connector.sse_proxy.unregister_client(client_q)
 
     return Response(
         event_stream(),
@@ -159,14 +179,14 @@ def monitor_session_events(session_id):
 @monitor_bp.route("/api/monitor/budget")
 def monitor_budget():
     """Aggregate budget statistics across all sessions."""
-    err = _check_enabled()
+    connector, err = _get_connector()
     if err:
         return err
 
-    if not _connector.db_reader:
+    if not connector.db_reader:
         return jsonify({"error": "Database not available"}), 503
 
-    stats = _connector.db_reader.get_budget_stats()
+    stats = connector.db_reader.get_budget_stats()
     return jsonify(stats)
 
 
@@ -175,17 +195,17 @@ def monitor_budget():
 @monitor_bp.route("/api/monitor/stats")
 def monitor_stats():
     """Today's summary: sessions, cost, success rate."""
-    err = _check_enabled()
+    connector, err = _get_connector()
     if err:
         return err
 
-    if not _connector.db_reader:
+    if not connector.db_reader:
         return jsonify({"error": "Database not available"}), 503
 
-    stats = _connector.db_reader.get_stats_today()
+    stats = connector.db_reader.get_stats_today()
 
     # Also check for running session
-    running = _connector.db_reader.detect_running_session()
+    running = connector.db_reader.detect_running_session()
     stats["running_session"] = running
 
     return jsonify(stats)
@@ -196,15 +216,15 @@ def monitor_stats():
 @monitor_bp.route("/api/monitor/models")
 def monitor_models():
     """Per-model performance statistics."""
-    err = _check_enabled()
+    connector, err = _get_connector()
     if err:
         return err
 
-    if not _connector.db_reader:
+    if not connector.db_reader:
         return jsonify({"error": "Database not available"}), 503
 
-    models = _connector.db_reader.get_model_stats()
-    distinct = _connector.db_reader.get_distinct_models()
+    models = connector.db_reader.get_model_stats()
+    distinct = connector.db_reader.get_distinct_models()
 
     return jsonify({"models": models, "available_models": distinct})
 
@@ -218,11 +238,11 @@ def monitor_live_feed():
     Auto-detects new video processing via ActiveProcessingDetector
     and relays step-by-step progress to dashboard clients.
     """
-    err = _check_enabled()
+    connector, err = _get_connector()
     if err:
         return err
 
-    detector = _connector.live_detector
+    detector = connector.live_detector
     client_q = detector.register_client()
 
     def event_stream():
@@ -261,11 +281,11 @@ def monitor_live_feed():
 @monitor_bp.route("/api/monitor/live/status")
 def monitor_live_status():
     """Current active processing status (REST endpoint)."""
-    err = _check_enabled()
+    connector, err = _get_connector()
     if err:
         return err
 
-    detector = _connector.live_detector
+    detector = connector.live_detector
     return jsonify({
         "active_video": detector.active_video,
         "active_title": detector.active_title,

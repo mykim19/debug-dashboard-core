@@ -8,6 +8,81 @@
   let phaseReports = {};   // name → report
   let historyData = [];
 
+  // ── Architecture Registry (per-workspace agent diagrams) ──
+  const ARCH_REGISTRY = {
+    "knowledge hub": {
+      title: "Knowledge Hub Agent Pipeline",
+      subtitle: "Video \u2192 Script Extraction \u2192 Knowledge Generation \u2192 Finalization",
+      nodes: [
+        { id: "orchestrator", label: "PlanOrchestrator",
+          role: "\uCD5C\uC0C1\uC704 \uCEE8\uD2B8\uB864\uB7EC\n\uC138\uC158 \uC0DD\uBA85\uC8FC\uAE30 \uAD00\uB9AC \u2014 \uC2E4\uD589 \uC2DC\uC791\uBD80\uD130 \uC885\uB8CC\uAE4C\uC9C0 \uC804\uCCB4 \uD30C\uC774\uD504\uB77C\uC778\uC744 \uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158\n\uC608\uC0B0 \uAC00\uB4DC \u2014 \uD1A0\uD070/\uBE44\uC6A9/\uD0C0\uC784\uC544\uC6C3 \uD55C\uB3C4 \uCD08\uACFC \uC2DC \uC790\uB3D9 \uC911\uB2E8\nPlanner\u2192Validator\u2192Executor \uD750\uB984\uC744 \uC21C\uCC28\uC801\uC73C\uB85C \uD638\uCD9C",
+          type: "controller", col: 0, row: 0 },
+        { id: "planner", label: "AgentPlanner",
+          role: "LLM \uAE30\uBC18 \uC2E4\uD589 \uACC4\uD68D \uC218\uB9BD\n\uBE44\uB514\uC624 \uC2A4\uD06C\uB9BD\uD2B8\uB97C \uBD84\uC11D\uD558\uC5EC \uC9C0\uC2DD \uC0DD\uC131 \uB2E8\uACC4\uB97C \uACC4\uD68D\nGemini / DeepSeek \uBAA8\uB378 \uC120\uD0DD \uAC00\uB2A5\n\uCD5C\uC801 \uB3C4\uAD6C\uC640 \uC21C\uC11C\uB97C \uACB0\uC815\uD558\uC5EC \uC2E4\uD589 \uACC4\uD68D \uBC18\uD658",
+          type: "planner", col: 0, row: 1 },
+        { id: "validator", label: "PlanValidator",
+          role: "\uACC4\uD68D \uAD6C\uC870 \uAC80\uC99D\n\uD544\uC218 \uD544\uB4DC \uC874\uC7AC \uC5EC\uBD80, \uB3C4\uAD6C \uC774\uB984 \uC720\uD6A8\uC131 \uD655\uC778\n\uC21C\uD658 \uCC38\uC870\uB098 \uBD88\uAC00\uB2A5\uD55C \uC758\uC874\uC131 \uD0D0\uC9C0\n\uAC80\uC99D \uC2E4\uD328 \uC2DC Planner\uC5D0\uAC8C \uC7AC\uACC4\uD68D \uC694\uCCAD",
+          type: "validator", col: 0, row: 2 },
+        { id: "executor", label: "PlanExecutor",
+          role: "\uACC4\uD68D\uB41C \uB2E8\uACC4\uB97C \uC21C\uCC28\uC801\uC73C\uB85C \uC2E4\uD589\n\uAC01 step\uC5D0 \uB300\uD574 \uD574\uB2F9 \uB3C4\uAD6C(Tool)\uB97C \uD638\uCD9C\n\uB2E8\uACC4\uBCC4 \uC624\uB958 \uBC1C\uC0DD \uC2DC \uC7AC\uC2DC\uB3C4 \uB610\uB294 \uC2A4\uD0B5 \uCC98\uB9AC\n\uC2E4\uD589 \uACB0\uACFC\uB97C Orchestrator\uC5D0\uAC8C \uBCF4\uACE0",
+          type: "executor", col: 0, row: 3 },
+        { id: "script_loader", label: "ScriptLoader",
+          role: "\uBE44\uB514\uC624 \uC2A4\uD06C\uB9BD\uD2B8 \uB85C\uB4DC \uB3C4\uAD6C\nYouTube \uB4F1\uC758 \uC601\uC0C1\uC5D0\uC11C \uC790\uB9C9/\uC2A4\uD06C\uB9BD\uD2B8\uB97C \uCD94\uCD9C\n\uAD6C\uC870\uD654\uB41C \uD14D\uC2A4\uD2B8\uB85C \uBCC0\uD658 \uD6C4 \uB2E4\uC74C \uB2E8\uACC4\uC5D0 \uC804\uB2EC\nLLM \uC5C6\uC774 \uB3D9\uC791 (\uBE44\uC6A9 \uBC1C\uC0DD \uC5C6\uC74C)",
+          type: "tool", col: -1, row: 4 },
+        { id: "stepaz_gen", label: "StepazGenerator",
+          role: "LLM \uAE30\uBC18 \uC9C0\uC2DD \uB2E8\uACC4 \uC0DD\uC131\uAE30\n\uC2A4\uD06C\uB9BD\uD2B8\uB97C \uBD84\uC11D\uD558\uC5EC \uD559\uC2B5\uC6A9 \uC9C0\uC2DD \uB2E8\uACC4\uB85C \uBCC0\uD658\n\uD578\uC2EC \uAC1C\uB150 \uCD94\uCD9C, \uC694\uC57D, \uAD6C\uC870\uD654 \uC218\uD589\n\uC8FC\uC694 LLM \uBE44\uC6A9 \uBC1C\uC0DD \uAD6C\uAC04",
+          type: "tool", col: 0, row: 4 },
+        { id: "knowledge_final", label: "Finalization",
+          role: "\uC9C0\uC2DD \uCD5C\uC885 \uC870\uB9BD \uB3C4\uAD6C\n\uC0DD\uC131\uB41C \uC9C0\uC2DD \uB2E8\uACC4\uB97C \uCD5C\uC885 \uACB0\uACFC\uBB3C\uB85C \uC870\uD569\n\uD488\uC9C8 \uAC80\uC99D \uBC0F \uD3EC\uB9F7 \uC815\uB9AC\n\uCD5C\uC885 \uC0B0\uCD9C\uBB3C\uC744 \uC800\uC7A5\uC18C\uC5D0 \uAE30\uB85D",
+          type: "tool", col: 1, row: 4 },
+        { id: "budget", label: "BudgetMonitor",
+          role: "\uC608\uC0B0 \uAC10\uC2DC \uC5D0\uC774\uC804\uD2B8\n\uD1A0\uD070 \uC0AC\uC6A9\uB7C9 \uC2E4\uC2DC\uAC04 \uCD94\uC801 \u2014 \uD55C\uB3C4 \uCD08\uACFC \uC2DC \uACBD\uACE0\nAPI \uBE44\uC6A9 \uB204\uC801 \uACC4\uC0B0 \u2014 \uC77C\uC77C \uD55C\uB3C4 \uAD00\uB9AC\n\uC2E4\uD589 \uC2DC\uAC04 \uD0C0\uC774\uBA38 \u2014 \uD0C0\uC784\uC544\uC6C3 \uC2DC \uAC15\uC81C \uC885\uB8CC",
+          type: "guard", col: 1, row: 1 },
+      ],
+      edges: [
+        { from: "orchestrator", to: "planner", label: "\uACC4\uD68D" },
+        { from: "planner", to: "validator", label: "\uAC80\uC99D" },
+        { from: "validator", to: "executor", label: "\uC2E4\uD589" },
+        { from: "executor", to: "script_loader" },
+        { from: "executor", to: "stepaz_gen" },
+        { from: "executor", to: "knowledge_final" },
+        { from: "budget", to: "orchestrator", dashed: true, label: "\uAC10\uC2DC" },
+      ],
+    },
+    "rag project": {
+      title: "K-Scaffold Agent Pipeline",
+      subtitle: "Task \u2192 Plan \u2192 Execute Steps \u2192 Validate \u2192 Complete",
+      nodes: [
+        { id: "controller", label: "AgentController",
+          role: "ReAct \uB8E8\uD504 \uCEE8\uD2B8\uB864\uB7EC\n\uC784\uBB34 \uC218\uC2E0 \u2192 \uACC4\uD68D \u2192 \uC2E4\uD589 \u2192 \uACB0\uACFC \uD655\uC778 \uC21C\uD658 \uAD00\uB9AC\n\uB3D9\uC801(dynamic) / \uC21C\uCC28(sequential) \uB450 \uAC00\uC9C0 \uC2E4\uD589 \uBAA8\uB4DC \uC9C0\uC6D0\n\uC608\uC0B0 \uAC00\uB4DC \u2014 \uD1A0\uD070/\uBE44\uC6A9/\uD0C0\uC784\uC544\uC6C3 \uD55C\uB3C4 \uAD00\uB9AC",
+          type: "controller", col: 0, row: 0 },
+        { id: "planner", label: "Planner",
+          role: "LLM \uAE30\uBC18 \uC791\uC5C5 \uACC4\uD68D \uC218\uB9BD\nGemini 2.5 Flash \uBAA8\uB378 + \uCEE8\uD14D\uC2A4\uD2B8 \uCE90\uC2F1 \uD65C\uC6A9\n\uC785\uB825\uB41C \uC791\uC5C5\uC744 \uBD84\uC11D\uD558\uC5EC \uCD5C\uC801 \uB3C4\uAD6C\uC640 \uC21C\uC11C \uACB0\uC815\n\uC2A4\uD0AC \uC720\uD615\uC5D0 \uB530\uB77C \uCF54\uB4DC\uBD84\uC11D/\uB9AC\uC11C\uCE58 \uD30C\uC774\uD504\uB77C\uC778 \uC120\uD0DD",
+          type: "planner", col: 0, row: 1 },
+        { id: "tool_executor", label: "ToolExecutor",
+          role: "\uB3C4\uAD6C \uC2E4\uD589 \uC5D4\uC9C4\n\uACC4\uD68D\uB41C \uAC01 \uB2E8\uACC4\uC758 \uB3C4\uAD6C\uB97C \uC2E4\uC81C\uB85C \uD638\uCD9C\u00B7\uC2E4\uD589\ncode_analysis: 6\uB2E8\uACC4 (AST \uD30C\uC2F1, \uC758\uC874\uC131 \uB9F5\uD551 \uB4F1)\nresearch_analysis: 6\uB2E8\uACC4 (\uBB38\uC11C \uBD84\uC11D, \uC694\uC57D \uB4F1)\n\uC2E4\uD589 \uACB0\uACFC\uB97C Controller\uC5D0\uAC8C \uBC18\uD658",
+          type: "executor", col: 0, row: 2 },
+        { id: "policy_engine", label: "PolicyEngine",
+          role: "\uC815\uCC45 \uBC0F \uC2B9\uC778 \uC5D4\uC9C4\nHuman-gate \u2014 \uC911\uC694 \uC791\uC5C5 \uC2E4\uD589 \uC804 \uC0AC\uC6A9\uC790 \uC2B9\uC778 \uC694\uCCAD\n\uAC00\uB4DC\uB808\uC77C \u2014 \uC704\uD5D8\uD55C \uC791\uC5C5\uC774\uB098 \uBC94\uC704 \uCD08\uACFC \uCC28\uB2E8\n\uC548\uC804 \uAC80\uC0AC \u2014 \uC2E4\uD589 \uC804 \uC785\uB825/\uCD9C\uB825 \uAC80\uC99D",
+          type: "validator", col: 1, row: 1 },
+        { id: "code_skill", label: "CodeAnalysis",
+          role: "\uCF54\uB4DC \uBD84\uC11D \uC2A4\uD0AC (6\uB2E8\uACC4 \uD30C\uC774\uD504\uB77C\uC778)\n1. \uD504\uB85C\uC81D\uD2B8 \uAD6C\uC870 \uC2A4\uCE94\n2. AST \uD30C\uC2F1 \uBC0F \uCF54\uB4DC \uBD84\uC11D\n3. \uC758\uC874\uC131 \uB9F5\uD551\n4. \uCF54\uB4DC \uD488\uC9C8 \uD3C9\uAC00\n5. \uBCF4\uC548 \uCDE8\uC57D\uC810 \uAC80\uC0AC\n6. \uBD84\uC11D \uBCF4\uACE0\uC11C \uC0DD\uC131",
+          type: "tool", col: -1, row: 3 },
+        { id: "research_skill", label: "Research",
+          role: "\uB9AC\uC11C\uCE58 \uBD84\uC11D \uC2A4\uD0AC (6\uB2E8\uACC4 \uD30C\uC774\uD504\uB77C\uC778)\n1. \uBB38\uC11C \uC218\uC9D1 \uBC0F \uC804\uCC98\uB9AC\n2. \uD575\uC2EC \uB0B4\uC6A9 \uCD94\uCD9C\n3. \uC8FC\uC81C\uBCC4 \uBD84\uB958 \uBC0F \uAD6C\uC870\uD654\n4. \uAD00\uB828\uC131 \uBD84\uC11D \uBC0F \uAD50\uCC28 \uCC38\uC870\n5. \uC694\uC57D \uBC0F \uD569\uC131\n6. \uCD5C\uC885 \uBCF4\uACE0\uC11C \uC0DD\uC131",
+          type: "tool", col: 1, row: 3 },
+      ],
+      edges: [
+        { from: "controller", to: "planner", label: "\uACC4\uD68D" },
+        { from: "planner", to: "tool_executor", label: "\uC2E4\uD589" },
+        { from: "tool_executor", to: "code_skill" },
+        { from: "tool_executor", to: "research_skill" },
+        { from: "policy_engine", to: "controller", dashed: true, label: "\uC2B9\uC778" },
+        { from: "tool_executor", to: "controller", dashed: true, label: "\uACB0\uACFC" },
+      ],
+    },
+  };
+
   // ── DOM refs ──
   const $ = (sel) => document.querySelector(sel);
   const $$ = (sel) => document.querySelectorAll(sel);
@@ -2665,6 +2740,472 @@
     connect();
   }
 
+  // ── Section Fold/Collapse Toggle ──────────────────────────────
+  // Each collapsible section stores its fold state in localStorage.
+  // Keys: dd_fold_<section-key> = "1" (collapsed) or absent (expanded)
+
+  function initSectionFold() {
+    var STORAGE_PREFIX = "dd_fold_";
+
+    // Restore saved fold states
+    document.querySelectorAll(".collapsible-section[data-fold-key]").forEach(function(section) {
+      var key = section.getAttribute("data-fold-key");
+      if (!key) return;
+      var saved = localStorage.getItem(STORAGE_PREFIX + key);
+      if (saved === "1") {
+        applyFold(section, key, true, false);
+      }
+    });
+
+    // Click handler: toggle buttons
+    document.querySelectorAll("[data-fold-btn]").forEach(function(btn) {
+      btn.addEventListener("click", function(e) {
+        e.stopPropagation();
+        var key = btn.getAttribute("data-fold-btn");
+        var section = document.querySelector('[data-fold-key="' + key + '"]');
+        if (!section) return;
+        var isCollapsed = section.classList.contains("is-collapsed");
+        applyFold(section, key, !isCollapsed, true);
+      });
+    });
+
+    // Click handler: section headers (click anywhere on header to toggle)
+    document.querySelectorAll(".collapsible-section .section-header").forEach(function(header) {
+      header.addEventListener("click", function(e) {
+        // Don't toggle if clicking on controls/selects/buttons inside the header
+        if (e.target.closest("select, .timeline-controls, .monitor-controls, .agent-controls, .btn-agent, .btn-monitor, .btn-llm-config, .agent-llm-badge, .agent-observer-badge")) return;
+        // Don't double-fire if the toggle button itself was clicked
+        if (e.target.closest("[data-fold-btn]")) return;
+
+        var section = header.closest(".collapsible-section");
+        if (!section) return;
+        var key = section.getAttribute("data-fold-key");
+        if (!key) return;
+        var isCollapsed = section.classList.contains("is-collapsed");
+        applyFold(section, key, !isCollapsed, true);
+      });
+    });
+
+    // Also let agent-header clicks toggle (agent-header is not .section-header)
+    document.querySelectorAll(".collapsible-section .agent-header").forEach(function(header) {
+      header.addEventListener("click", function(e) {
+        if (e.target.closest("button, select, .agent-controls, .agent-llm-badge, .agent-observer-badge, .btn-llm-config, .btn-agent")) return;
+        if (e.target.closest("[data-fold-btn]")) return;
+        var section = header.closest(".collapsible-section");
+        if (!section) return;
+        var key = section.getAttribute("data-fold-key");
+        if (!key) return;
+        var isCollapsed = section.classList.contains("is-collapsed");
+        applyFold(section, key, !isCollapsed, true);
+      });
+    });
+
+    // Also let monitor-header clicks toggle
+    document.querySelectorAll(".collapsible-section .monitor-header").forEach(function(header) {
+      header.addEventListener("click", function(e) {
+        if (e.target.closest("button, select, .monitor-controls, .monitor-status-dots, .btn-monitor")) return;
+        if (e.target.closest("[data-fold-btn]")) return;
+        var section = header.closest(".collapsible-section");
+        if (!section) return;
+        var key = section.getAttribute("data-fold-key");
+        if (!key) return;
+        var isCollapsed = section.classList.contains("is-collapsed");
+        applyFold(section, key, !isCollapsed, true);
+      });
+    });
+  }
+
+  function applyFold(section, key, collapse, save) {
+    var STORAGE_PREFIX = "dd_fold_";
+    var btn = section.querySelector("[data-fold-btn]");
+    var body = section.querySelector("[data-fold-body]");
+
+    if (collapse) {
+      section.classList.add("is-collapsed");
+      if (btn) btn.classList.add("collapsed");
+      if (body) body.classList.add("collapsed");
+    } else {
+      section.classList.remove("is-collapsed");
+      if (btn) btn.classList.remove("collapsed");
+      if (body) body.classList.remove("collapsed");
+    }
+
+    if (save) {
+      if (collapse) {
+        localStorage.setItem(STORAGE_PREFIX + key, "1");
+      } else {
+        localStorage.removeItem(STORAGE_PREFIX + key);
+      }
+    }
+  }
+
+  // ── Architecture Diagram ──────────────────────────────────────
+  function initArchitecture() {
+    const wsName = (window.__DD_WS_NAME || "").toLowerCase();
+    if (!wsName) return;
+
+    // Find matching architecture
+    let archData = null;
+    for (const [key, data] of Object.entries(ARCH_REGISTRY)) {
+      if (wsName.includes(key.toLowerCase())) { archData = data; break; }
+    }
+    if (!archData) return;
+
+    const section = document.getElementById("archSection");
+    if (!section) return;
+    section.style.display = "";
+
+    // Set titles
+    const titleEl = document.getElementById("archTitleDetail");
+    if (titleEl) titleEl.textContent = archData.title;
+    const subEl = document.getElementById("archSubtitle");
+    if (subEl) subEl.textContent = archData.subtitle;
+
+    // Build SVG
+    const container = document.getElementById("archContainer");
+    if (!container) return;
+    const result = _buildArchSVG(archData, container);
+
+    // Create tooltip
+    _createArchTooltip();
+
+    // Start particle animation
+    _startArchParticles(archData, result);
+
+    // Render legend
+    _renderArchLegend(archData);
+  }
+
+  // ── SVG Constants ──
+  const _ARCH = {
+    SVG_W: 800, NODE_W: 140, NODE_H: 44,
+    COL_GAP: 180, ROW_GAP: 80,
+    MARGIN_X: 100, MARGIN_Y: 50,
+    NS: "http://www.w3.org/2000/svg",
+  };
+
+  function _archNodePos(node) {
+    const cx = _ARCH.SVG_W / 2 + node.col * _ARCH.COL_GAP;
+    const cy = _ARCH.MARGIN_Y + node.row * _ARCH.ROW_GAP;
+    return { x: cx - _ARCH.NODE_W / 2, y: cy - _ARCH.NODE_H / 2, cx, cy };
+  }
+
+  function _buildArchSVG(archData, container) {
+    const NS = _ARCH.NS;
+    const maxRow = Math.max(...archData.nodes.map(n => n.row));
+    const svgH = _ARCH.MARGIN_Y * 2 + maxRow * _ARCH.ROW_GAP + _ARCH.NODE_H;
+
+    const svg = document.createElementNS(NS, "svg");
+    svg.setAttribute("viewBox", "0 0 " + _ARCH.SVG_W + " " + svgH);
+    svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+    // Defs: arrowhead marker + glow filter
+    const defs = document.createElementNS(NS, "defs");
+
+    const marker = document.createElementNS(NS, "marker");
+    marker.setAttribute("id", "archArrow");
+    marker.setAttribute("viewBox", "0 0 10 10");
+    marker.setAttribute("refX", "9"); marker.setAttribute("refY", "5");
+    marker.setAttribute("markerWidth", "6"); marker.setAttribute("markerHeight", "6");
+    marker.setAttribute("orient", "auto-start-reverse");
+    const arrow = document.createElementNS(NS, "path");
+    arrow.setAttribute("d", "M 0 0 L 10 5 L 0 10 z");
+    arrow.setAttribute("class", "arch-arrow");
+    marker.appendChild(arrow);
+    defs.appendChild(marker);
+
+    // Glow filter for nodes
+    const filter = document.createElementNS(NS, "filter");
+    filter.setAttribute("id", "archGlow");
+    filter.setAttribute("x", "-20%"); filter.setAttribute("y", "-20%");
+    filter.setAttribute("width", "140%"); filter.setAttribute("height", "140%");
+    const blur = document.createElementNS(NS, "feGaussianBlur");
+    blur.setAttribute("stdDeviation", "3"); blur.setAttribute("result", "glow");
+    filter.appendChild(blur);
+    const merge = document.createElementNS(NS, "feMerge");
+    const mn1 = document.createElementNS(NS, "feMergeNode");
+    mn1.setAttribute("in", "glow");
+    const mn2 = document.createElementNS(NS, "feMergeNode");
+    mn2.setAttribute("in", "SourceGraphic");
+    merge.appendChild(mn1); merge.appendChild(mn2);
+    filter.appendChild(merge);
+    defs.appendChild(filter);
+
+    svg.appendChild(defs);
+
+    // Calculate positions
+    const positions = {};
+    archData.nodes.forEach(n => { positions[n.id] = _archNodePos(n); });
+
+    // ── Edges (behind nodes) ──
+    const edgesG = document.createElementNS(NS, "g");
+    archData.edges.forEach(edge => {
+      const fp = positions[edge.from], tp = positions[edge.to];
+      if (!fp || !tp) return;
+      const pathEl = _createEdgePath(fp, tp, edge);
+      edgesG.appendChild(pathEl);
+
+      // Edge label
+      if (edge.label) {
+        const lbl = document.createElementNS(NS, "text");
+        const mx = (fp.cx + tp.cx) / 2, my = (fp.cy + tp.cy) / 2;
+        // Offset label slightly for readability
+        const offX = fp.cx === tp.cx ? 10 : 0;
+        const offY = fp.cx === tp.cx ? 0 : -8;
+        lbl.setAttribute("x", mx + offX);
+        lbl.setAttribute("y", my + offY);
+        lbl.setAttribute("text-anchor", "middle");
+        lbl.setAttribute("class", "arch-edge-label");
+        lbl.textContent = edge.label;
+        edgesG.appendChild(lbl);
+      }
+    });
+    svg.appendChild(edgesG);
+
+    // ── Nodes ──
+    const nodesG = document.createElementNS(NS, "g");
+    archData.nodes.forEach(node => {
+      const pos = positions[node.id];
+      const g = document.createElementNS(NS, "g");
+      g.setAttribute("class", "arch-node arch-node-" + node.type);
+      g.setAttribute("transform", "translate(" + pos.x + "," + pos.y + ")");
+
+      // Rectangle
+      const rect = document.createElementNS(NS, "rect");
+      rect.setAttribute("width", _ARCH.NODE_W);
+      rect.setAttribute("height", _ARCH.NODE_H);
+      g.appendChild(rect);
+
+      // Label (centered in node)
+      const text = document.createElementNS(NS, "text");
+      text.setAttribute("x", _ARCH.NODE_W / 2);
+      text.setAttribute("y", _ARCH.NODE_H / 2 + 5);
+      text.setAttribute("text-anchor", "middle");
+      text.textContent = node.label;
+      g.appendChild(text);
+
+      // Hover events
+      g.addEventListener("mouseenter", (e) => _showArchTip(node, e));
+      g.addEventListener("mousemove", (e) => _moveArchTip(e));
+      g.addEventListener("mouseleave", _hideArchTip);
+
+      nodesG.appendChild(g);
+    });
+    svg.appendChild(nodesG);
+
+    // ── Particle layer ──
+    const particleG = document.createElementNS(NS, "g");
+    particleG.setAttribute("id", "archParticles");
+    svg.appendChild(particleG);
+
+    container.innerHTML = "";
+    container.appendChild(svg);
+
+    return { svg, positions, edgesG };
+  }
+
+  function _createEdgePath(fp, tp, edge) {
+    const NS = _ARCH.NS;
+    let x1, y1, x2, y2;
+    const NW = _ARCH.NODE_W, NH = _ARCH.NODE_H;
+
+    if (fp.cy < tp.cy) {
+      // Downward flow
+      x1 = fp.cx; y1 = fp.cy + NH / 2;
+      x2 = tp.cx; y2 = tp.cy - NH / 2;
+    } else if (fp.cy > tp.cy) {
+      // Upward (feedback) — use right side
+      x1 = fp.cx + NW / 2 + 5; y1 = fp.cy;
+      x2 = tp.cx + NW / 2 + 5; y2 = tp.cy;
+    } else {
+      // Same row — horizontal
+      if (fp.cx < tp.cx) {
+        x1 = fp.cx + NW / 2; y1 = fp.cy;
+        x2 = tp.cx - NW / 2; y2 = tp.cy;
+      } else {
+        x1 = fp.cx - NW / 2; y1 = fp.cy;
+        x2 = tp.cx + NW / 2; y2 = tp.cy;
+      }
+    }
+
+    // Bezier control points
+    let d;
+    if (fp.cy === tp.cy) {
+      // Horizontal: straight line
+      d = "M " + x1 + " " + y1 + " L " + x2 + " " + y2;
+    } else if (fp.cy > tp.cy) {
+      // Upward: curve outward to the right
+      const bulge = 40;
+      d = "M " + x1 + " " + y1 +
+          " C " + (x1 + bulge) + " " + y1 + "," +
+                  (x2 + bulge) + " " + y2 + "," +
+                  x2 + " " + y2;
+    } else {
+      // Downward: smooth vertical bezier
+      const midY = (y1 + y2) / 2;
+      d = "M " + x1 + " " + y1 +
+          " C " + x1 + " " + midY + "," +
+                  x2 + " " + midY + "," +
+                  x2 + " " + y2;
+    }
+
+    const path = document.createElementNS(NS, "path");
+    path.setAttribute("d", d);
+    path.setAttribute("class", "arch-edge" + (edge.dashed ? " dashed" : ""));
+    path.setAttribute("marker-end", "url(#archArrow)");
+    path.dataset.from = edge.from;
+    path.dataset.to = edge.to;
+    return path;
+  }
+
+  // ── Particles ──
+  function _startArchParticles(archData, result) {
+    const NS = _ARCH.NS;
+    const particleG = document.getElementById("archParticles");
+    if (!particleG) return;
+
+    const particles = [];
+    const paths = result.edgesG.querySelectorAll(".arch-edge");
+
+    paths.forEach(path => {
+      let totalLen;
+      try { totalLen = path.getTotalLength(); } catch (e) { return; }
+      if (totalLen < 1) return;
+
+      const fromId = path.dataset.from || "";
+      const srcNode = archData.nodes.find(n => n.id === fromId);
+      const colorCls = srcNode ? ("arch-particle-" + srcNode.type) : "arch-particle-default";
+
+      for (let p = 0; p < 2; p++) {
+        const circle = document.createElementNS(NS, "circle");
+        circle.setAttribute("class", "arch-particle " + colorCls);
+        circle.setAttribute("r", "3");
+        particleG.appendChild(circle);
+
+        particles.push({
+          el: circle, path: path,
+          totalLen: totalLen,
+          speed: 0.004 + Math.random() * 0.002,
+          progress: p * 0.5,
+        });
+      }
+    });
+
+    if (particles.length === 0) return;
+
+    let animId = null;
+    let paused = false;
+
+    function animate() {
+      particles.forEach(p => {
+        p.progress += p.speed;
+        if (p.progress > 1) p.progress -= 1;
+        try {
+          const pt = p.path.getPointAtLength(p.progress * p.totalLen);
+          p.el.setAttribute("cx", pt.x);
+          p.el.setAttribute("cy", pt.y);
+          // Fade at endpoints
+          const fade = Math.min(p.progress * 4, (1 - p.progress) * 4, 1);
+          p.el.setAttribute("opacity", String(Math.max(0, fade * 0.8)));
+        } catch (e) { /* path not ready */ }
+      });
+      animId = requestAnimationFrame(animate);
+    }
+
+    function startAnim() { if (!animId && !paused) { animate(); } }
+    function stopAnim()  { if (animId) { cancelAnimationFrame(animId); animId = null; } }
+
+    startAnim();
+
+    // Pause when section collapsed
+    const sectionBody = document.querySelector('[data-fold-body="arch"]');
+    if (sectionBody) {
+      const obs = new MutationObserver(() => {
+        if (sectionBody.classList.contains("collapsed")) { stopAnim(); }
+        else { startAnim(); }
+      });
+      obs.observe(sectionBody, { attributes: true, attributeFilter: ["class"] });
+    }
+
+    // Pause when tab hidden
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) { paused = true; stopAnim(); }
+      else { paused = false; startAnim(); }
+    });
+  }
+
+  // ── Tooltip ──
+  function _createArchTooltip() {
+    const container = document.getElementById("archContainer");
+    if (!container) return;
+    const tip = document.createElement("div");
+    tip.className = "arch-tooltip";
+    tip.id = "archTooltip";
+    tip.innerHTML = '<div class="arch-tooltip-label"></div>' +
+                    '<div class="arch-tooltip-type"></div>' +
+                    '<div class="arch-tooltip-role"></div>';
+    container.appendChild(tip);
+  }
+
+  const _ARCH_TYPE_KR = {
+    controller: "\uCEE8\uD2B8\uB864\uB7EC", planner: "\uD50C\uB798\uB108",
+    validator: "\uAC80\uC99D\uAE30", executor: "\uC2E4\uD589\uAE30",
+    tool: "\uB3C4\uAD6C", guard: "\uAC10\uC2DC",
+  };
+  function _showArchTip(node, e) {
+    const tip = document.getElementById("archTooltip");
+    if (!tip) return;
+    tip.querySelector(".arch-tooltip-label").textContent = node.label;
+    const typeKr = _ARCH_TYPE_KR[node.type] || node.type;
+    tip.querySelector(".arch-tooltip-type").textContent = typeKr + " (" + node.type + ")";
+    tip.querySelector(".arch-tooltip-role").textContent = node.role;
+    tip.classList.add("visible");
+    _moveArchTip(e);
+  }
+  function _moveArchTip(e) {
+    const tip = document.getElementById("archTooltip");
+    if (!tip) return;
+    const container = document.getElementById("archContainer");
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    let x = e.clientX - rect.left + 15;
+    let y = e.clientY - rect.top - 10;
+    if (x + 280 > rect.width) x = Math.max(0, rect.width - 290);
+    if (y < 0) y = 10;
+    tip.style.left = x + "px";
+    tip.style.top = y + "px";
+  }
+  function _hideArchTip() {
+    const tip = document.getElementById("archTooltip");
+    if (tip) tip.classList.remove("visible");
+  }
+
+  // ── Legend ──
+  function _renderArchLegend(archData) {
+    const legend = document.getElementById("archLegend");
+    if (!legend) return;
+    const types = {
+      controller: { label: "\uCEE8\uD2B8\uB864\uB7EC", color: "#06b6d4" },
+      planner:    { label: "\uD50C\uB798\uB108",       color: "#a855f7" },
+      validator:  { label: "\uAC80\uC99D\uAE30",       color: "#f59e0b" },
+      executor:   { label: "\uC2E4\uD589\uAE30",       color: "#22c55e" },
+      tool:       { label: "\uB3C4\uAD6C",             color: "#6366f1" },
+      guard:      { label: "\uAC10\uC2DC",             color: "#ef4444" },
+    };
+    const used = new Set(archData.nodes.map(n => n.type));
+    let html = "";
+    for (const [type, info] of Object.entries(types)) {
+      if (!used.has(type)) continue;
+      html += '<span class="arch-legend-item">' +
+              '<span class="arch-legend-dot" style="background:' + info.color + '20;border-color:' + info.color + '"></span>' +
+              info.label + '</span>';
+    }
+    html += '<span class="arch-legend-item">' +
+            '<span class="arch-legend-dot" style="background:#06b6d4;border:none;border-radius:50%;width:6px;height:6px"></span>' +
+            '\uB370\uC774\uD130 \uD750\uB984</span>';
+    legend.innerHTML = html;
+  }
+
   // ── Start ──
   init();
   initAgent();
@@ -2673,4 +3214,6 @@
   initTimeline();
   initMonitor();
   initLiveFeed();
+  initArchitecture();
+  initSectionFold();
 })();

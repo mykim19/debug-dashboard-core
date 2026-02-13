@@ -526,6 +526,12 @@ body {
   font-weight: 700;
   letter-spacing: 2px;
   color: var(--text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+.section-header:hover .section-toggle {
+  border-color: var(--cyan);
+  color: var(--cyan);
 }
 
 .section-icon {
@@ -1357,6 +1363,12 @@ body {
   align-items: center;
   gap: 0.6rem;
   flex-wrap: wrap;
+  cursor: pointer;
+  user-select: none;
+}
+.agent-header:hover .section-toggle {
+  border-color: var(--cyan);
+  color: var(--cyan);
 }
 .agent-icon { font-size: 1.2rem; }
 .agent-title {
@@ -2273,6 +2285,12 @@ body {
   gap: 10px;
   flex-wrap: wrap;
   margin-bottom: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+.monitor-header:hover .section-toggle {
+  border-color: var(--cyan);
+  color: var(--cyan);
 }
 .monitor-icon { font-size: 1.2rem; }
 .monitor-title {
@@ -2810,6 +2828,269 @@ body {
 @keyframes step-fade-in {
   from { opacity: 0; transform: translateX(-10px); }
   to { opacity: 1; transform: translateX(0); }
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ARCHITECTURE DIAGRAM
+   ══════════════════════════════════════════════════════════════ */
+
+.arch-section {
+  margin: 12px 24px;
+  padding: 16px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  position: relative;
+  overflow: visible;
+}
+.arch-section::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--purple), var(--cyan), var(--purple));
+  opacity: 0.6;
+}
+.arch-header {
+  cursor: pointer;
+  user-select: none;
+}
+.arch-header:hover .section-toggle {
+  border-color: var(--cyan);
+  color: var(--cyan);
+}
+.arch-title-detail {
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-left: 8px;
+  font-weight: 400;
+}
+.arch-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.arch-container {
+  width: 100%;
+  min-height: 280px;
+  display: flex;
+  justify-content: center;
+  position: relative;
+  overflow: visible;
+}
+.arch-container svg {
+  width: 100%;
+  max-width: 900px;
+  height: auto;
+}
+
+/* Node base */
+.arch-node rect {
+  rx: 8; ry: 8;
+  stroke-width: 1.5;
+  transition: filter 0.3s, stroke-width 0.3s;
+  cursor: pointer;
+}
+.arch-node:hover rect {
+  filter: brightness(1.3);
+  stroke-width: 2.5;
+}
+.arch-node text {
+  font-family: 'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace;
+  font-size: 11px;
+  fill: var(--text-primary);
+  pointer-events: none;
+}
+.arch-node-type-badge {
+  font-family: 'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace;
+  font-size: 7px;
+  fill: var(--text-muted);
+  letter-spacing: 1px;
+  pointer-events: none;
+}
+
+/* Node type colors */
+.arch-node-controller rect { fill: rgba(6,182,212,0.15); stroke: #06b6d4; }
+.arch-node-planner rect    { fill: rgba(168,85,247,0.15); stroke: #a855f7; }
+.arch-node-validator rect  { fill: rgba(245,158,11,0.15); stroke: #f59e0b; }
+.arch-node-executor rect   { fill: rgba(34,197,94,0.15); stroke: #22c55e; }
+.arch-node-tool rect       { fill: rgba(99,102,241,0.15); stroke: #6366f1; }
+.arch-node-guard rect      { fill: rgba(239,68,68,0.12); stroke: #ef4444; }
+
+/* Edge lines */
+.arch-edge {
+  fill: none;
+  stroke: rgba(148,163,184,0.4);
+  stroke-width: 1.5;
+}
+.arch-edge.dashed {
+  stroke-dasharray: 6,4;
+}
+.arch-edge-label {
+  font-family: 'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace;
+  font-size: 9px;
+  fill: var(--text-muted);
+}
+.arch-arrow { fill: rgba(148,163,184,0.5); }
+
+/* Particles */
+.arch-particle { opacity: 0.8; }
+.arch-particle-controller { fill: #06b6d4; }
+.arch-particle-planner    { fill: #a855f7; }
+.arch-particle-validator  { fill: #f59e0b; }
+.arch-particle-executor   { fill: #22c55e; }
+.arch-particle-tool       { fill: #6366f1; }
+.arch-particle-guard      { fill: #ef4444; }
+.arch-particle-default    { fill: #94a3b8; }
+
+/* Tooltip */
+.arch-tooltip {
+  position: absolute;
+  background: var(--bg-secondary);
+  border: 1px solid rgba(6,182,212,0.4);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-family: 'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace;
+  font-size: 0.7rem;
+  color: var(--text-primary);
+  max-width: 280px;
+  box-shadow: 0 0 20px rgba(6,182,212,0.15);
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+  white-space: pre-line;
+  line-height: 1.5;
+}
+.arch-tooltip.visible { opacity: 1; }
+.arch-tooltip-label {
+  font-weight: 700;
+  color: #06b6d4;
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+}
+.arch-tooltip-type {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+.arch-tooltip-role {
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+/* Legend */
+.arch-legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+  font-family: 'SF Mono','Fira Code','Cascadia Code','JetBrains Mono',monospace;
+  font-size: 0.6rem;
+  color: var(--text-muted);
+}
+.arch-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.arch-legend-dot {
+  width: 10px; height: 10px;
+  border-radius: 3px;
+  border: 1px solid;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .arch-section { margin: 8px 12px; }
+  .arch-container svg { max-width: 100%; }
+  .arch-node text { font-size: 9px; }
+  .arch-edge-label { font-size: 7px; }
+  .arch-node-type-badge { font-size: 6px; }
+}
+
+
+/* ── Section Fold / Collapse Toggle ── */
+.section-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px; height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  line-height: 1;
+  padding: 0;
+  margin-right: 2px;
+}
+.section-toggle:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: rgba(6,182,212,0.08);
+}
+.section-toggle .toggle-arrow {
+  display: inline-block;
+  transition: transform 0.25s ease;
+}
+.section-toggle.collapsed .toggle-arrow {
+  transform: rotate(-90deg);
+}
+
+/* Collapsible body: wrap content below the header */
+.section-body {
+  overflow: hidden;
+  transition: max-height 0.35s ease, opacity 0.25s ease;
+  max-height: 5000px;   /* large enough to never clip */
+  opacity: 1;
+}
+.section-body.collapsed {
+  max-height: 0 !important;
+  opacity: 0;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* When a collapsible section is collapsed, dim the header slightly */
+.collapsible-section.is-collapsed {
+  padding-bottom: 0.5rem;
+}
+.collapsible-section.is-collapsed .section-body {
+  max-height: 0 !important;
+  opacity: 0;
+  overflow: hidden;
+  margin: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+/* Phase-grid special: collapse into a thin summary bar */
+.phase-grid-summary {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0 2px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+.phase-grid-summary .pg-count {
+  color: var(--cyan);
+  font-weight: 600;
+}
+.collapsible-section.is-collapsed .phase-grid-summary {
+  display: flex;
 }
 
 /* ── Utility ── */

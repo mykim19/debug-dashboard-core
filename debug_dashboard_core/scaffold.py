@@ -192,7 +192,10 @@ def _detect_features(workspace: Path, scan: Dict[str, Any]) -> Dict[str, bool]:
     features["has_golden"] = features["has_golden"] or "golden_sentences" in all_tables
     features["has_citations"] = "citations" in all_tables
     features["has_search_index"] = any("fts" in t.lower() or "search" in t.lower() for t in all_tables)
-    features["has_agent"] = features["has_agent"] or "agent_sessions" in all_tables or "budget_history" in all_tables
+    features["has_agent"] = (features["has_agent"]
+                             or "agent_sessions" in all_tables
+                             or "budget_history" in all_tables
+                             or "agent_runs" in all_tables)
 
     return features
 

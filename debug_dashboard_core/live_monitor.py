@@ -33,7 +33,16 @@ class MainServiceDBReader:
 
     Primary data source: budget_history (6000+ session records)
     Secondary: agent_sessions + tool_invocations (per-session details)
+
+    LLM-only filter: Only sessions with actual LLM usage (cost > 0 OR total_tokens > 0)
+    are included in listings and statistics. Non-LLM operations (e.g. document indexing)
+    that happen to be logged in budget_history are excluded.
     """
+
+    # Filter condition to include only sessions where LLM was actually used.
+    # Sessions with cost=0 AND total_tokens=0 are non-LLM operations
+    # (e.g. doc indexing, placeholder rows, scaffold test entries).
+    _LLM_FILTER = "(cost > 0 OR total_tokens > 0)"
 
     def __init__(self, db_path: str):
         self.db_path = str(db_path)
@@ -111,8 +120,8 @@ class MainServiceDBReader:
 
         conn = self._get_conn()
         try:
-            # Build WHERE clause
-            conditions = []
+            # Build WHERE clause — always include LLM-only filter
+            conditions = [f"(bh.cost > 0 OR bh.total_tokens > 0)"]
             params: list = []
 
             if cursor:
@@ -125,9 +134,7 @@ class MainServiceDBReader:
                 conditions.append("bh.model_name = ?")
                 params.append(model)
 
-            where = ""
-            if conditions:
-                where = "WHERE " + " AND ".join(conditions)
+            where = "WHERE " + " AND ".join(conditions)
 
             # Keyset pagination — GPT Review #4
             sql = f"""
@@ -152,8 +159,10 @@ class MainServiceDBReader:
             if len(rows) > limit:
                 next_cursor = sessions[-1]["created_at"]
 
-            # Total count (cached, not per-request for performance)
-            total = conn.execute("SELECT count(*) FROM budget_history").fetchone()[0]
+            # Total count — LLM sessions only
+            total = conn.execute(
+                f"SELECT count(*) FROM budget_history WHERE {self._LLM_FILTER}"
+            ).fetchone()[0]
 
             return {
                 "sessions": sessions,
@@ -222,14 +231,14 @@ class MainServiceDBReader:
 
         conn = self._get_conn()
         try:
-            row = conn.execute("""
+            row = conn.execute(f"""
                 SELECT
                     count(*) as cnt,
                     coalesce(sum(cost), 0) as total_cost,
                     coalesce(avg(duration_sec), 0) as avg_dur,
                     count(CASE WHEN status='completed' THEN 1 END) as success_cnt
                 FROM budget_history
-                WHERE created_at >= date('now')
+                WHERE created_at >= date('now') AND {self._LLM_FILTER}
             """).fetchone()
 
             cnt = row["cnt"] or 0
@@ -252,7 +261,7 @@ class MainServiceDBReader:
 
         conn = self._get_conn()
         try:
-            row = conn.execute("""
+            row = conn.execute(f"""
                 SELECT
                     count(*) as total_sessions,
                     coalesce(sum(cost), 0) as total_cost,
@@ -264,6 +273,7 @@ class MainServiceDBReader:
                     count(CASE WHEN status='error' THEN 1 END) as errors,
                     count(CASE WHEN status='cancelled' THEN 1 END) as cancelled
                 FROM budget_history
+                WHERE {self._LLM_FILTER}
             """).fetchone()
 
             return {
@@ -290,7 +300,7 @@ class MainServiceDBReader:
 
         conn = self._get_conn()
         try:
-            rows = conn.execute("""
+            rows = conn.execute(f"""
                 SELECT
                     provider, model_name,
                     count(*) as runs,
@@ -299,6 +309,7 @@ class MainServiceDBReader:
                     coalesce(avg(duration_sec), 0) as avg_duration,
                     count(CASE WHEN status='completed' THEN 1 END) as success_cnt
                 FROM budget_history
+                WHERE {self._LLM_FILTER}
                 GROUP BY provider, model_name
                 ORDER BY runs DESC
             """).fetchall()
@@ -354,7 +365,7 @@ class MainServiceDBReader:
         conn = self._get_conn()
         try:
             rows = conn.execute(
-                "SELECT DISTINCT model_name FROM budget_history ORDER BY model_name"
+                f"SELECT DISTINCT model_name FROM budget_history WHERE {self._LLM_FILTER} ORDER BY model_name"
             ).fetchall()
             return [r["model_name"] for r in rows]
         except Exception:
