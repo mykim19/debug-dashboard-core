@@ -291,3 +291,19 @@ def monitor_live_status():
         "active_title": detector.active_title,
         "is_processing": detector.active_video is not None,
     })
+
+
+@monitor_bp.route("/api/monitor/live/callback", methods=["POST"])
+def monitor_live_callback():
+    """메인 서비스에서 실시간 로그를 수신하는 콜백 엔드포인트."""
+    connector, err = _get_connector()
+    if err:
+        return err
+
+    data = request.get_json(silent=True)
+    if not data:
+        return jsonify({"error": "No JSON body"}), 400
+
+    detector = connector.live_detector
+    detector.receive_callback(data)
+    return jsonify({"ok": True})

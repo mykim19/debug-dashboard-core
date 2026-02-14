@@ -549,6 +549,11 @@ class ActiveProcessingDetector:
         self._sse_thread: Optional[threading.Thread] = None
         self._stop_event = threading.Event()
         self._sse_stop = threading.Event()
+        # High-water marks for session detection
+        self._last_bh_ts: Optional[str] = None
+        self._last_stepaz_count: int = 0
+        # Replay cooldown — skip detections until this timestamp
+        self._replay_cooldown: float = 0
 
     # ── Properties ────────────────────────────────────────────
 
@@ -587,6 +592,47 @@ class ActiveProcessingDetector:
             for q in dead:
                 self._client_queues.remove(q)
 
+    def receive_callback(self, data: dict):
+        """메인 서비스에서 HTTP 콜백으로 수신한 이벤트 처리."""
+        event_type = data.get("type", "")
+
+        if event_type == "live_log":
+            # 진행 중 상태 설정
+            vid = data.get("video_id")
+            if vid and not self._active_video:
+                self._active_video = vid
+                self._active_title = data.get("title", "")
+
+            # SSE로 브라우저에 전달
+            self._broadcast({
+                "type": "live_log",
+                "step": data.get("step", 0),
+                "total": data.get("total", 5),
+                "message": data.get("message", ""),
+                "sections_done": data.get("sections_done", 0),
+                "sections_total": data.get("sections_total", 10),
+                "video_id": data.get("video_id", ""),
+                "title": data.get("title", ""),
+            })
+
+            # done 플래그 처리
+            if data.get("done"):
+                success = not data.get("error")
+                self._broadcast({
+                    "type": "live_complete",
+                    "success": success,
+                    "message": data.get("error") or "완료",
+                })
+                self._active_video = None
+                self._active_title = ""
+                # 쿨다운 설정: 폴링 리플레이 방지
+                self._replay_cooldown = time.time() + 30
+                self._refresh_stepaz_count()
+
+            # 쿨다운 갱신: 콜백이 오는 동안 폴링 리플레이 방지
+            if not data.get("done"):
+                self._replay_cooldown = time.time() + 15
+
     # ── Lifecycle ─────────────────────────────────────────────
 
     def start(self):
@@ -614,7 +660,7 @@ class ActiveProcessingDetector:
     # ── Initialization ────────────────────────────────────────
 
     def _init_seen_videos(self):
-        """Load recent video_ids into _seen_videos to avoid false triggers."""
+        """Load recent video_ids and record high-water marks."""
         if not self._db_reader or not self._db_reader.is_available:
             return
         try:
@@ -624,7 +670,27 @@ class ActiveProcessingDetector:
                     "SELECT video_id FROM videos ORDER BY rowid DESC LIMIT 200"
                 ).fetchall()
                 self._seen_videos = {r["video_id"] for r in rows}
-                logger.info(f"[live] Initialized with {len(self._seen_videos)} known videos")
+
+                # High-water mark: latest budget_history timestamp
+                bh_row = conn.execute(
+                    "SELECT created_at FROM budget_history "
+                    "WHERE (cost > 0 OR total_tokens > 0) "
+                    "ORDER BY created_at DESC LIMIT 1"
+                ).fetchone()
+                self._last_bh_ts = bh_row["created_at"] if bh_row else None
+
+                # Stepaz high-water mark: count of videos with stepaz path
+                stepaz_row = conn.execute(
+                    "SELECT count(*) FROM videos "
+                    "WHERE script_stepaz_path IS NOT NULL"
+                ).fetchone()
+                self._last_stepaz_count = stepaz_row[0] if stepaz_row else 0
+
+                logger.info(
+                    f"[live] Initialized: {len(self._seen_videos)} videos, "
+                    f"last_bh_ts={self._last_bh_ts}, "
+                    f"stepaz_count={self._last_stepaz_count}"
+                )
             finally:
                 conn.close()
         except Exception as e:
@@ -633,10 +699,18 @@ class ActiveProcessingDetector:
     # ── Polling Loop ──────────────────────────────────────────
 
     def _poll_loop(self):
-        """Poll every 2 seconds for newly created videos."""
+        """Poll every 2 seconds for newly created videos, sessions, or stepaz."""
         while not self._stop_event.is_set():
             try:
+                # Skip if replay cooldown is active
+                if time.time() < self._replay_cooldown:
+                    self._stop_event.wait(2)
+                    continue
                 self._check_new_videos()
+                if not self._active_video:
+                    self._check_active_sessions()
+                if not self._active_video:
+                    self._check_new_stepaz()
             except Exception as e:
                 logger.debug(f"[live] poll error: {e}")
             self._stop_event.wait(2)
@@ -681,6 +755,206 @@ class ActiveProcessingDetector:
                 # Start tracking knowledge generation via DB polling
                 self._start_knowledge_tracker(vid, title)
                 break  # Handle one at a time
+
+    def _check_active_sessions(self):
+        """Detect new agent sessions via high-water mark on budget_history.created_at.
+
+        Compares latest budget_history entry against _last_bh_ts.  If newer,
+        this is a genuinely new session — trigger detection regardless of
+        whether it's still running or already completed.
+        """
+        if not self._db_reader or not self._db_reader.is_available:
+            return
+        try:
+            conn = self._db_reader._get_conn()
+            try:
+                row = conn.execute(
+                    """SELECT session_id, video_id, video_title, tool_calls,
+                              total_tokens, cost, duration_sec, status, created_at
+                       FROM budget_history
+                       WHERE (cost > 0 OR total_tokens > 0)
+                       ORDER BY created_at DESC LIMIT 1"""
+                ).fetchone()
+            finally:
+                conn.close()
+        except Exception:
+            return
+
+        if not row or not row["video_id"]:
+            return
+
+        # High-water mark comparison
+        entry_ts = row["created_at"]
+        if self._last_bh_ts and entry_ts <= self._last_bh_ts:
+            return  # Not newer than what we already know
+
+        # New session detected — advance the watermark
+        self._last_bh_ts = entry_ts
+
+        vid = row["video_id"]
+        title = row["video_title"] or vid
+        status = row["status"]
+        sid = row["session_id"]
+        logger.info(f"[live] New session detected: {sid} for {vid} (status={status})")
+
+        self._active_video = vid
+        self._active_title = title
+
+        # Compute how long ago the session was created
+        try:
+            from datetime import datetime as _dt
+            created = _dt.fromisoformat(entry_ts)
+            ago_sec = (datetime.now() - created).total_seconds()
+            if ago_sec < 10:
+                timing_note = "방금 완료"
+            elif ago_sec < 60:
+                timing_note = f"{int(ago_sec)}초 전 완료"
+            elif ago_sec < 3600:
+                timing_note = f"{int(ago_sec // 60)}분 전 완료"
+            else:
+                timing_note = f"{int(ago_sec // 3600)}시간 전 완료"
+        except Exception:
+            timing_note = ""
+
+        self._broadcast({
+            "type": "processing_detected",
+            "video_id": vid,
+            "title": title,
+            "timing_note": timing_note,
+            "timestamp": datetime.now().isoformat(),
+        })
+
+        if status == "completed":
+            # Session already done — replay with detailed step messages
+            tc = row["tool_calls"] or 0
+            tokens = row["total_tokens"] or 0
+            cost = row["cost"] or 0
+            dur = row["duration_sec"] or 0
+            replay_steps = [
+                (1, f"[{timing_note}] 영상 스크립트 로드 및 분석"),
+                (2, f"에이전트 계획 수립 → 도구 {tc}회 호출"),
+                (3, f"지식 구조화 — {tokens:,} 토큰 사용"),
+                (4, "STEPAZ 지식 파일 생성 완료"),
+                (5, f"세션 완료 (비용: ${cost:.4f}, 소요: {dur:.0f}초)"),
+            ]
+            for s, msg in replay_steps:
+                self._broadcast({
+                    "type": "live_progress",
+                    "video_id": vid, "title": title,
+                    "step": s, "total": 5,
+                    "message": msg,
+                    "sections_done": s, "sections_total": 5,
+                    "tool_name": None,
+                    "timestamp": datetime.now().isoformat(),
+                })
+                time.sleep(2.0)
+            self._broadcast({
+                "type": "live_complete",
+                "video_id": vid, "title": title,
+                "success": True,
+                "timestamp": datetime.now().isoformat(),
+            })
+            self._active_video = None
+            # Refresh stepaz count + set cooldown to prevent double-trigger
+            self._refresh_stepaz_count()
+            self._replay_cooldown = time.time() + 15
+        else:
+            self._start_knowledge_tracker(vid, title)
+
+    def _refresh_stepaz_count(self):
+        """Update _last_stepaz_count to current DB value (prevents double replay)."""
+        try:
+            conn = self._db_reader._get_conn()
+            try:
+                row = conn.execute(
+                    "SELECT count(*) FROM videos "
+                    "WHERE script_stepaz_path IS NOT NULL"
+                ).fetchone()
+                self._last_stepaz_count = row[0] if row else self._last_stepaz_count
+            finally:
+                conn.close()
+        except Exception:
+            pass
+
+    def _check_new_stepaz(self):
+        """Detect knowledge generation via new script_stepaz_path entries.
+
+        When main service generates knowledge for an old video (already in
+        _seen_videos), no new video row is created.  But script_stepaz_path
+        transitions from NULL → path.  Detect this by comparing count.
+        """
+        if not self._db_reader or not self._db_reader.is_available:
+            return
+        try:
+            conn = self._db_reader._get_conn()
+            try:
+                row = conn.execute(
+                    "SELECT count(*) FROM videos "
+                    "WHERE script_stepaz_path IS NOT NULL"
+                ).fetchone()
+                cur_count = row[0] if row else 0
+
+                if cur_count <= self._last_stepaz_count:
+                    return  # No new stepaz
+
+                # Find the video(s) that just gained a stepaz path
+                new_row = conn.execute(
+                    """SELECT video_id, title FROM videos
+                       WHERE script_stepaz_path IS NOT NULL
+                       ORDER BY rowid DESC LIMIT 1"""
+                ).fetchone()
+            finally:
+                conn.close()
+        except Exception:
+            return
+
+        self._last_stepaz_count = cur_count
+
+        if not new_row:
+            return
+
+        vid = new_row["video_id"]
+        title = new_row["title"] or vid
+        logger.info(f"[live] New stepaz detected for {vid} ({title})")
+
+        self._active_video = vid
+        self._active_title = title
+
+        self._broadcast({
+            "type": "processing_detected",
+            "video_id": vid,
+            "title": title,
+            "timing_note": "STEPAZ 파일 생성 감지",
+            "timestamp": datetime.now().isoformat(),
+        })
+
+        # Replay completed processing with descriptive messages
+        replay_steps = [
+            (1, "영상 스크립트 로드 및 분석"),
+            (2, "에이전트 계획 수립 및 도구 호출"),
+            (3, "지식 노드 생성 및 구조화"),
+            (4, "STEPAZ 지식 파일 생성 완료"),
+            (5, "에이전트 세션 완료"),
+        ]
+        for s, msg in replay_steps:
+            self._broadcast({
+                "type": "live_progress",
+                "video_id": vid, "title": title,
+                "step": s, "total": 5,
+                "message": msg,
+                "sections_done": s, "sections_total": 5,
+                "tool_name": None,
+                "timestamp": datetime.now().isoformat(),
+            })
+            time.sleep(2.0)
+        self._broadcast({
+            "type": "live_complete",
+            "video_id": vid, "title": title,
+            "success": True,
+            "timestamp": datetime.now().isoformat(),
+        })
+        self._active_video = None
+        self._replay_cooldown = time.time() + 15
 
     # ── Knowledge Generation Tracker (DB polling) ─────────────
 
@@ -772,31 +1046,60 @@ class ActiveProcessingDetector:
                     except Exception:
                         bh_row = None
 
+                    # Get latest tool invocation name for architecture diagram
+                    latest_tool = None
+                    if bh_row and bh_row["session_id"]:
+                        try:
+                            ti_row = conn.execute(
+                                """SELECT tool_name FROM tool_invocations
+                                   WHERE session_id = ?
+                                   ORDER BY started_at DESC LIMIT 1""",
+                                (bh_row["session_id"],),
+                            ).fetchone()
+                            if ti_row:
+                                latest_tool = ti_row["tool_name"]
+                        except Exception:
+                            pass
+
                 finally:
                     conn.close()
 
                 # Determine progress step based on what we see
                 new_step = step
                 message = ""
+                cur_tool = latest_tool  # for architecture diagram
+
+                # Step 1: video exists with script ready
+                if video_status in ("ready", "processing", "completed") and step < 1:
+                    new_step = 1
+                    message = "스크립트 준비 완료"
 
                 if kn_count > last_knowledge_count:
                     last_knowledge_count = kn_count
                     new_step = max(step, 3)
-                    message = f"Knowledge nodes: {kn_count}"
+                    message = f"지식 노드 생성 중: {kn_count}개"
 
                 if stepaz_path and stepaz_path != last_stepaz:
                     last_stepaz = stepaz_path
                     new_step = max(step, 4)
-                    message = "STEPAZ knowledge file generated"
+                    message = "STEPAZ 지식 파일 생성됨"
 
                 if bh_row:
                     # Agent session detected
                     if bh_row["status"] == "completed":
                         new_step = total_steps
-                        message = "Agent session completed"
+                        tc = bh_row["tool_calls"] or 0
+                        tk = bh_row["total_tokens"] or 0
+                        cost = bh_row["cost"] or 0
+                        dur = bh_row["duration_sec"] or 0
+                        message = (f"에이전트 세션 완료 — "
+                                   f"도구 {tc}회, {tk:,} 토큰, "
+                                   f"${cost:.4f}, {dur:.0f}초")
                     elif bh_row["tool_calls"] and bh_row["tool_calls"] > 0:
                         new_step = max(step, 2)
-                        message = f"Agent: {bh_row['tool_calls']} tool calls, {bh_row['total_tokens'] or 0} tokens"
+                        tc = bh_row["tool_calls"]
+                        tk = bh_row["total_tokens"] or 0
+                        message = f"에이전트 실행 중: {tc}회 도구 호출, {tk:,} 토큰 사용"
 
                 if new_step > step:
                     step = new_step
@@ -809,6 +1112,7 @@ class ActiveProcessingDetector:
                         "message": message,
                         "sections_done": step,
                         "sections_total": total_steps,
+                        "tool_name": latest_tool,
                         "timestamp": datetime.now().isoformat(),
                     }
                     self._broadcast(progress_evt)

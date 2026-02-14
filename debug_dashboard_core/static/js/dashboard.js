@@ -11,75 +11,101 @@
   // ── Architecture Registry (per-workspace agent diagrams) ──
   const ARCH_REGISTRY = {
     "knowledge hub": {
-      title: "Knowledge Hub Agent Pipeline",
-      subtitle: "Video \u2192 Script Extraction \u2192 Knowledge Generation \u2192 Finalization",
+      title: "Knowledge Hub \uC5D0\uC774\uC804\uD2B8 \uD750\uB984",
+      subtitle: "\uC601\uC0C1 \u2192 \uC790\uB9C9 \uCD94\uCD9C \u2192 \uC9C0\uC2DD \uC0DD\uC131 \u2192 \uCD5C\uC885 \uACB0\uACFC\uBB3C",
       nodes: [
-        { id: "orchestrator", label: "PlanOrchestrator",
-          role: "\uCD5C\uC0C1\uC704 \uCEE8\uD2B8\uB864\uB7EC\n\uC138\uC158 \uC0DD\uBA85\uC8FC\uAE30 \uAD00\uB9AC \u2014 \uC2E4\uD589 \uC2DC\uC791\uBD80\uD130 \uC885\uB8CC\uAE4C\uC9C0 \uC804\uCCB4 \uD30C\uC774\uD504\uB77C\uC778\uC744 \uC624\uCF00\uC2A4\uD2B8\uB808\uC774\uC158\n\uC608\uC0B0 \uAC00\uB4DC \u2014 \uD1A0\uD070/\uBE44\uC6A9/\uD0C0\uC784\uC544\uC6C3 \uD55C\uB3C4 \uCD08\uACFC \uC2DC \uC790\uB3D9 \uC911\uB2E8\nPlanner\u2192Validator\u2192Executor \uD750\uB984\uC744 \uC21C\uCC28\uC801\uC73C\uB85C \uD638\uCD9C",
+        { id: "orchestrator", label: "\uCD1D\uAD04 \uAD00\uB9AC\uC790",
+          role: "\uC804\uCCB4 \uC791\uC5C5\uC744 \uCC98\uC74C\uBD80\uD130 \uB05D\uAE4C\uC9C0 \uC9C0\uD718\uD558\uB294 \uC5ED\uD560\uC785\uB2C8\uB2E4.\n\uC544\uB798\uC758 \uACC4\uD68D\u21D2\uAC80\uC99D\u21D2\uC2E4\uD589 \uD750\uB984\uC744 \uC21C\uC11C\uB300\uB85C \uD638\uCD9C\uD558\uACE0,\n\uBE44\uC6A9\uC774\uB098 \uC2DC\uAC04\uC774 \uD55C\uB3C4\uB97C \uB118\uC73C\uBA74 \uC790\uB3D9\uC73C\uB85C \uC791\uC5C5\uC744 \uC911\uB2E8\uD569\uB2C8\uB2E4.",
           type: "controller", col: 0, row: 0 },
-        { id: "planner", label: "AgentPlanner",
-          role: "LLM \uAE30\uBC18 \uC2E4\uD589 \uACC4\uD68D \uC218\uB9BD\n\uBE44\uB514\uC624 \uC2A4\uD06C\uB9BD\uD2B8\uB97C \uBD84\uC11D\uD558\uC5EC \uC9C0\uC2DD \uC0DD\uC131 \uB2E8\uACC4\uB97C \uACC4\uD68D\nGemini / DeepSeek \uBAA8\uB378 \uC120\uD0DD \uAC00\uB2A5\n\uCD5C\uC801 \uB3C4\uAD6C\uC640 \uC21C\uC11C\uB97C \uACB0\uC815\uD558\uC5EC \uC2E4\uD589 \uACC4\uD68D \uBC18\uD658",
+        { id: "planner", label: "\uACC4\uD68D \uC218\uB9BD",
+          role: "AI\uAC00 \uC601\uC0C1 \uB0B4\uC6A9\uC744 \uBD84\uC11D\uD574\uC11C \"\uC5B4\uB5A4 \uC21C\uC11C\uB85C \uBB34\uC5C7\uC744 \uD560\uC9C0\" \uACC4\uD68D\uC744 \uC138\uC6C1\uB2C8\uB2E4.\n\uC608: \"\uBA3C\uC800 \uC790\uB9C9\uC744 \uCD94\uCD9C\uD558\uACE0, \uB2E4\uC74C\uC5D0 \uC9C0\uC2DD\uC744 \uC0DD\uC131\uD558\uACE0, \uB9C8\uC9C0\uB9C9\uC73C\uB85C \uC815\uB9AC\uD558\uC790\"\nGemini \uB610\uB294 DeepSeek AI \uBAA8\uB378\uC744 \uC120\uD0DD\uD574 \uC0AC\uC6A9\uD569\uB2C8\uB2E4.",
           type: "planner", col: 0, row: 1 },
-        { id: "validator", label: "PlanValidator",
-          role: "\uACC4\uD68D \uAD6C\uC870 \uAC80\uC99D\n\uD544\uC218 \uD544\uB4DC \uC874\uC7AC \uC5EC\uBD80, \uB3C4\uAD6C \uC774\uB984 \uC720\uD6A8\uC131 \uD655\uC778\n\uC21C\uD658 \uCC38\uC870\uB098 \uBD88\uAC00\uB2A5\uD55C \uC758\uC874\uC131 \uD0D0\uC9C0\n\uAC80\uC99D \uC2E4\uD328 \uC2DC Planner\uC5D0\uAC8C \uC7AC\uACC4\uD68D \uC694\uCCAD",
+        { id: "validator", label: "\uACC4\uD68D \uAC80\uC99D",
+          role: "\uC138\uC6B4 \uACC4\uD68D\uC774 \uC2E4\uC81C\uB85C \uC2E4\uD589 \uAC00\uB2A5\uD55C\uC9C0 \uD655\uC778\uD569\uB2C8\uB2E4.\n\uBE60\uC9C4 \uB2E8\uACC4\uB098 \uBAA8\uC21C\uB418\uB294 \uC21C\uC11C\uAC00 \uC5C6\uB294\uC9C0 \uC810\uAC80\uD558\uACE0,\n\uBB38\uC81C\uAC00 \uBC1C\uACAC\uB418\uBA74 \uACC4\uD68D \uC218\uB9BD \uB2E8\uACC4\uB85C \uB3CC\uB824\uBCF4\uB0C5\uB2C8\uB2E4.",
           type: "validator", col: 0, row: 2 },
-        { id: "executor", label: "PlanExecutor",
-          role: "\uACC4\uD68D\uB41C \uB2E8\uACC4\uB97C \uC21C\uCC28\uC801\uC73C\uB85C \uC2E4\uD589\n\uAC01 step\uC5D0 \uB300\uD574 \uD574\uB2F9 \uB3C4\uAD6C(Tool)\uB97C \uD638\uCD9C\n\uB2E8\uACC4\uBCC4 \uC624\uB958 \uBC1C\uC0DD \uC2DC \uC7AC\uC2DC\uB3C4 \uB610\uB294 \uC2A4\uD0B5 \uCC98\uB9AC\n\uC2E4\uD589 \uACB0\uACFC\uB97C Orchestrator\uC5D0\uAC8C \uBCF4\uACE0",
+        { id: "executor", label: "\uC791\uC5C5 \uC2E4\uD589",
+          role: "\uAC80\uC99D\uB41C \uACC4\uD68D\uC744 \uD55C \uB2E8\uACC4\uC529 \uC2E4\uC81C\uB85C \uC218\uD589\uD569\uB2C8\uB2E4.\n\uAC01 \uB2E8\uACC4\uC5D0\uC11C \uC544\uB798\uC758 \uB3C4\uAD6C\uB4E4\uC744 \uD638\uCD9C\uD558\uACE0,\n\uC624\uB958\uAC00 \uBC1C\uC0DD\uD558\uBA74 \uC7AC\uC2DC\uB3C4\uD558\uAC70\uB098 \uAC74\uB108\uB701\uB2C8\uB2E4.",
           type: "executor", col: 0, row: 3 },
-        { id: "script_loader", label: "ScriptLoader",
-          role: "\uBE44\uB514\uC624 \uC2A4\uD06C\uB9BD\uD2B8 \uB85C\uB4DC \uB3C4\uAD6C\nYouTube \uB4F1\uC758 \uC601\uC0C1\uC5D0\uC11C \uC790\uB9C9/\uC2A4\uD06C\uB9BD\uD2B8\uB97C \uCD94\uCD9C\n\uAD6C\uC870\uD654\uB41C \uD14D\uC2A4\uD2B8\uB85C \uBCC0\uD658 \uD6C4 \uB2E4\uC74C \uB2E8\uACC4\uC5D0 \uC804\uB2EC\nLLM \uC5C6\uC774 \uB3D9\uC791 (\uBE44\uC6A9 \uBC1C\uC0DD \uC5C6\uC74C)",
+        { id: "script_loader", label: "\uC790\uB9C9 \uCD94\uCD9C",
+          role: "\uC601\uC0C1\uC5D0\uC11C \uC790\uB9C9\uC774\uB098 \uC2A4\uD06C\uB9BD\uD2B8\uB97C \uBC1B\uC544\uC624\uB294 \uB3C4\uAD6C\uC785\uB2C8\uB2E4.\nYouTube \uB4F1\uC758 \uC601\uC0C1\uC5D0\uC11C \uD14D\uC2A4\uD2B8\uB97C \uCD94\uCD9C\uD558\uACE0,\nAI\uB97C \uC0AC\uC6A9\uD558\uC9C0 \uC54A\uC544 \uCD94\uAC00 \uBE44\uC6A9\uC774 \uC5C6\uC2B5\uB2C8\uB2E4.",
           type: "tool", col: -1, row: 4 },
-        { id: "stepaz_gen", label: "StepazGenerator",
-          role: "LLM \uAE30\uBC18 \uC9C0\uC2DD \uB2E8\uACC4 \uC0DD\uC131\uAE30\n\uC2A4\uD06C\uB9BD\uD2B8\uB97C \uBD84\uC11D\uD558\uC5EC \uD559\uC2B5\uC6A9 \uC9C0\uC2DD \uB2E8\uACC4\uB85C \uBCC0\uD658\n\uD578\uC2EC \uAC1C\uB150 \uCD94\uCD9C, \uC694\uC57D, \uAD6C\uC870\uD654 \uC218\uD589\n\uC8FC\uC694 LLM \uBE44\uC6A9 \uBC1C\uC0DD \uAD6C\uAC04",
+        { id: "stepaz_gen", label: "\uC9C0\uC2DD \uC0DD\uC131",
+          role: "AI\uAC00 \uCD94\uCD9C\uB41C \uC790\uB9C9\uC744 \uD559\uC2B5\uC6A9 \uC9C0\uC2DD\uC73C\uB85C \uBCC0\uD658\uD569\uB2C8\uB2E4.\n\uD578\uC2EC \uAC1C\uB150\uC744 \uBD84\uB958\uD558\uACE0, \uC694\uC57D\uD558\uACE0, \uAD6C\uC870\uD654\uD569\uB2C8\uB2E4.\nAI \uBE44\uC6A9\uC774 \uAC00\uC7A5 \uB9CE\uC774 \uBC1C\uC0DD\uD558\uB294 \uB2E8\uACC4\uC785\uB2C8\uB2E4.",
           type: "tool", col: 0, row: 4 },
-        { id: "knowledge_final", label: "Finalization",
-          role: "\uC9C0\uC2DD \uCD5C\uC885 \uC870\uB9BD \uB3C4\uAD6C\n\uC0DD\uC131\uB41C \uC9C0\uC2DD \uB2E8\uACC4\uB97C \uCD5C\uC885 \uACB0\uACFC\uBB3C\uB85C \uC870\uD569\n\uD488\uC9C8 \uAC80\uC99D \uBC0F \uD3EC\uB9F7 \uC815\uB9AC\n\uCD5C\uC885 \uC0B0\uCD9C\uBB3C\uC744 \uC800\uC7A5\uC18C\uC5D0 \uAE30\uB85D",
+        { id: "knowledge_final", label: "\uCD5C\uC885 \uC815\uB9AC",
+          role: "\uC0DD\uC131\uB41C \uC9C0\uC2DD\uC744 \uCD5C\uC885 \uACB0\uACFC\uBB3C\uB85C \uC870\uD569\uD569\uB2C8\uB2E4.\n\uD488\uC9C8\uC744 \uD655\uC778\uD558\uACE0 \uD615\uC2DD\uC744 \uC815\uB9AC\uD55C \uB4A4,\n\uC644\uC131\uB41C \uACB0\uACFC\uBB3C\uC744 \uC800\uC7A5\uD569\uB2C8\uB2E4.",
           type: "tool", col: 1, row: 4 },
-        { id: "budget", label: "BudgetMonitor",
-          role: "\uC608\uC0B0 \uAC10\uC2DC \uC5D0\uC774\uC804\uD2B8\n\uD1A0\uD070 \uC0AC\uC6A9\uB7C9 \uC2E4\uC2DC\uAC04 \uCD94\uC801 \u2014 \uD55C\uB3C4 \uCD08\uACFC \uC2DC \uACBD\uACE0\nAPI \uBE44\uC6A9 \uB204\uC801 \uACC4\uC0B0 \u2014 \uC77C\uC77C \uD55C\uB3C4 \uAD00\uB9AC\n\uC2E4\uD589 \uC2DC\uAC04 \uD0C0\uC774\uBA38 \u2014 \uD0C0\uC784\uC544\uC6C3 \uC2DC \uAC15\uC81C \uC885\uB8CC",
+        { id: "budget", label: "\uBE44\uC6A9 \uAC10\uC2DC",
+          role: "AI \uC0AC\uC6A9\uB7C9\uACFC \uBE44\uC6A9\uC744 \uC2E4\uC2DC\uAC04\uC73C\uB85C \uCD94\uC801\uD569\uB2C8\uB2E4.\n\uC124\uC815\uB41C \uD55C\uB3C4(\uBE44\uC6A9, \uC2DC\uAC04, \uC0AC\uC6A9\uB7C9)\uB97C \uB118\uC73C\uBA74\n\uCD1D\uAD04 \uAD00\uB9AC\uC790\uC5D0\uAC8C \uACBD\uACE0\uD558\uC5EC \uC791\uC5C5\uC744 \uC911\uB2E8\uC2DC\uD0B5\uB2C8\uB2E4.",
           type: "guard", col: 1, row: 1 },
       ],
       edges: [
-        { from: "orchestrator", to: "planner", label: "\uACC4\uD68D" },
-        { from: "planner", to: "validator", label: "\uAC80\uC99D" },
-        { from: "validator", to: "executor", label: "\uC2E4\uD589" },
-        { from: "executor", to: "script_loader" },
-        { from: "executor", to: "stepaz_gen" },
-        { from: "executor", to: "knowledge_final" },
-        { from: "budget", to: "orchestrator", dashed: true, label: "\uAC10\uC2DC" },
+        { from: "orchestrator", to: "planner", label: "\uACC4\uD68D \uC694\uCCAD" },
+        { from: "planner", to: "validator", label: "\uACC4\uD68D \uC804\uB2EC" },
+        { from: "validator", to: "executor", label: "\uC2E4\uD589 \uC9C0\uC2DC" },
+        { from: "executor", to: "script_loader", label: "\uCD94\uCD9C" },
+        { from: "executor", to: "stepaz_gen", label: "\uBCC0\uD658" },
+        { from: "executor", to: "knowledge_final", label: "\uC815\uB9AC" },
+        { from: "budget", to: "orchestrator", dashed: true, label: "\uBE44\uC6A9 \uACBD\uACE0" },
       ],
+      // 라이브 피드 step(1~5) → 활성화할 노드 매핑
+      stepMap: {
+        1: ["script_loader"],
+        2: ["orchestrator", "planner", "validator"],
+        3: ["executor", "stepaz_gen"],
+        4: ["knowledge_final"],
+        5: [],
+      },
+      // tool_invocations.tool_name → 노드 ID
+      toolMap: {
+        "script_load": "script_loader", "script_extract": "script_loader",
+        "stepaz_generate": "stepaz_gen", "stepaz": "stepaz_gen",
+        "knowledge_final": "knowledge_final", "finalize": "knowledge_final",
+        "rag_index": "knowledge_final",
+      },
     },
     "rag project": {
-      title: "K-Scaffold Agent Pipeline",
-      subtitle: "Task \u2192 Plan \u2192 Execute Steps \u2192 Validate \u2192 Complete",
+      title: "K-Scaffold \uC5D0\uC774\uC804\uD2B8 \uD750\uB984",
+      subtitle: "\uC791\uC5C5 \uC694\uCCAD \u2192 \uACC4\uD68D \uC218\uB9BD \u2192 \uB3C4\uAD6C \uC2E4\uD589 \u2192 \uACB0\uACFC \uD655\uC778",
       nodes: [
-        { id: "controller", label: "AgentController",
-          role: "ReAct \uB8E8\uD504 \uCEE8\uD2B8\uB864\uB7EC\n\uC784\uBB34 \uC218\uC2E0 \u2192 \uACC4\uD68D \u2192 \uC2E4\uD589 \u2192 \uACB0\uACFC \uD655\uC778 \uC21C\uD658 \uAD00\uB9AC\n\uB3D9\uC801(dynamic) / \uC21C\uCC28(sequential) \uB450 \uAC00\uC9C0 \uC2E4\uD589 \uBAA8\uB4DC \uC9C0\uC6D0\n\uC608\uC0B0 \uAC00\uB4DC \u2014 \uD1A0\uD070/\uBE44\uC6A9/\uD0C0\uC784\uC544\uC6C3 \uD55C\uB3C4 \uAD00\uB9AC",
+        { id: "controller", label: "\uCD1D\uAD04 \uAD00\uB9AC\uC790",
+          role: "\uC791\uC5C5\uC744 \uBC1B\uC544\uC11C \uACC4\uD68D\u2192\uC2E4\uD589\u2192\uACB0\uACFC\uD655\uC778\uC744 \uBC18\uBCF5\uD569\uB2C8\uB2E4.\n\uD55C \uBC88\uC5D0 \uD574\uACB0\uB418\uC9C0 \uC54A\uC73C\uBA74 \uB2E4\uC2DC \uACC4\uD68D\uC744 \uC138\uC6B0\uACE0 \uC2DC\uB3C4\uD558\uBA70,\n\uBE44\uC6A9\uACFC \uC2DC\uAC04 \uD55C\uB3C4\uB97C \uAD00\uB9AC\uD569\uB2C8\uB2E4.",
           type: "controller", col: 0, row: 0 },
-        { id: "planner", label: "Planner",
-          role: "LLM \uAE30\uBC18 \uC791\uC5C5 \uACC4\uD68D \uC218\uB9BD\nGemini 2.5 Flash \uBAA8\uB378 + \uCEE8\uD14D\uC2A4\uD2B8 \uCE90\uC2F1 \uD65C\uC6A9\n\uC785\uB825\uB41C \uC791\uC5C5\uC744 \uBD84\uC11D\uD558\uC5EC \uCD5C\uC801 \uB3C4\uAD6C\uC640 \uC21C\uC11C \uACB0\uC815\n\uC2A4\uD0AC \uC720\uD615\uC5D0 \uB530\uB77C \uCF54\uB4DC\uBD84\uC11D/\uB9AC\uC11C\uCE58 \uD30C\uC774\uD504\uB77C\uC778 \uC120\uD0DD",
+        { id: "planner", label: "\uACC4\uD68D \uC218\uB9BD",
+          role: "AI\uAC00 \uC8FC\uC5B4\uC9C4 \uC791\uC5C5\uC744 \uBD84\uC11D\uD574\uC11C \uC5B4\uB5A4 \uB3C4\uAD6C\uB97C \uC5B4\uB5A4 \uC21C\uC11C\uB85C \uC0AC\uC6A9\uD560\uC9C0 \uACB0\uC815\uD569\uB2C8\uB2E4.\n\uCF54\uB4DC \uBD84\uC11D\uC774 \uD544\uC694\uD558\uBA74 \uCF54\uB4DC\uBD84\uC11D \uB3C4\uAD6C\uB97C,\n\uC790\uB8CC \uC870\uC0AC\uAC00 \uD544\uC694\uD558\uBA74 \uB9AC\uC11C\uCE58 \uB3C4\uAD6C\uB97C \uC120\uD0DD\uD569\uB2C8\uB2E4.",
           type: "planner", col: 0, row: 1 },
-        { id: "tool_executor", label: "ToolExecutor",
-          role: "\uB3C4\uAD6C \uC2E4\uD589 \uC5D4\uC9C4\n\uACC4\uD68D\uB41C \uAC01 \uB2E8\uACC4\uC758 \uB3C4\uAD6C\uB97C \uC2E4\uC81C\uB85C \uD638\uCD9C\u00B7\uC2E4\uD589\ncode_analysis: 6\uB2E8\uACC4 (AST \uD30C\uC2F1, \uC758\uC874\uC131 \uB9F5\uD551 \uB4F1)\nresearch_analysis: 6\uB2E8\uACC4 (\uBB38\uC11C \uBD84\uC11D, \uC694\uC57D \uB4F1)\n\uC2E4\uD589 \uACB0\uACFC\uB97C Controller\uC5D0\uAC8C \uBC18\uD658",
+        { id: "tool_executor", label: "\uB3C4\uAD6C \uC2E4\uD589",
+          role: "\uACC4\uD68D\uC5D0 \uB530\uB77C \uC2E4\uC81C \uB3C4\uAD6C\uB97C \uD558\uB098\uC529 \uC2E4\uD589\uD569\uB2C8\uB2E4.\n\uCF54\uB4DC\uBD84\uC11D\uC740 6\uB2E8\uACC4(\uAD6C\uC870 \uD30C\uC545 \u2192 \uD488\uC9C8 \uD3C9\uAC00 \u2192 \uBCF4\uACE0\uC11C),\n\uB9AC\uC11C\uCE58\uB3C4 6\uB2E8\uACC4(\uBB38\uC11C \uC218\uC9D1 \u2192 \uBD84\uC11D \u2192 \uBCF4\uACE0\uC11C)\uB85C \uC9C4\uD589\uB429\uB2C8\uB2E4.",
           type: "executor", col: 0, row: 2 },
-        { id: "policy_engine", label: "PolicyEngine",
-          role: "\uC815\uCC45 \uBC0F \uC2B9\uC778 \uC5D4\uC9C4\nHuman-gate \u2014 \uC911\uC694 \uC791\uC5C5 \uC2E4\uD589 \uC804 \uC0AC\uC6A9\uC790 \uC2B9\uC778 \uC694\uCCAD\n\uAC00\uB4DC\uB808\uC77C \u2014 \uC704\uD5D8\uD55C \uC791\uC5C5\uC774\uB098 \uBC94\uC704 \uCD08\uACFC \uCC28\uB2E8\n\uC548\uC804 \uAC80\uC0AC \u2014 \uC2E4\uD589 \uC804 \uC785\uB825/\uCD9C\uB825 \uAC80\uC99D",
+        { id: "policy_engine", label: "\uC548\uC804 \uAC80\uC0AC",
+          role: "\uC911\uC694\uD55C \uC791\uC5C5 \uC804\uC5D0 \uC0AC\uC6A9\uC790 \uC2B9\uC778\uC744 \uC694\uCCAD\uD569\uB2C8\uB2E4.\n\uC704\uD5D8\uD558\uAC70\uB098 \uBC94\uC704\uB97C \uBC97\uC5B4\uB09C \uC791\uC5C5\uC744 \uCC28\uB2E8\uD558\uACE0,\n\uC2E4\uD589 \uC804\uD6C4\uB85C \uC785\uB825\uACFC \uACB0\uACFC\uB97C \uC548\uC804\uD558\uAC8C \uAC80\uC0AC\uD569\uB2C8\uB2E4.",
           type: "validator", col: 1, row: 1 },
-        { id: "code_skill", label: "CodeAnalysis",
-          role: "\uCF54\uB4DC \uBD84\uC11D \uC2A4\uD0AC (6\uB2E8\uACC4 \uD30C\uC774\uD504\uB77C\uC778)\n1. \uD504\uB85C\uC81D\uD2B8 \uAD6C\uC870 \uC2A4\uCE94\n2. AST \uD30C\uC2F1 \uBC0F \uCF54\uB4DC \uBD84\uC11D\n3. \uC758\uC874\uC131 \uB9F5\uD551\n4. \uCF54\uB4DC \uD488\uC9C8 \uD3C9\uAC00\n5. \uBCF4\uC548 \uCDE8\uC57D\uC810 \uAC80\uC0AC\n6. \uBD84\uC11D \uBCF4\uACE0\uC11C \uC0DD\uC131",
+        { id: "code_skill", label: "\uCF54\uB4DC \uBD84\uC11D",
+          role: "\uCF54\uB4DC\uB97C 6\uB2E8\uACC4\uB85C \uBD84\uC11D\uD558\uB294 \uB3C4\uAD6C\uC785\uB2C8\uB2E4.\n1. \uD504\uB85C\uC81D\uD2B8 \uAD6C\uC870 \uD30C\uC545\n2. \uCF54\uB4DC \uB0B4\uC6A9 \uBD84\uC11D\n3. \uBD80\uD488 \uAC04 \uC5F0\uACB0 \uAD00\uACC4 \uD30C\uC545\n4. \uCF54\uB4DC \uD488\uC9C8 \uD3C9\uAC00\n5. \uBCF4\uC548 \uBB38\uC81C \uAC80\uC0AC\n6. \uBD84\uC11D \uBCF4\uACE0\uC11C \uC791\uC131",
           type: "tool", col: -1, row: 3 },
-        { id: "research_skill", label: "Research",
-          role: "\uB9AC\uC11C\uCE58 \uBD84\uC11D \uC2A4\uD0AC (6\uB2E8\uACC4 \uD30C\uC774\uD504\uB77C\uC778)\n1. \uBB38\uC11C \uC218\uC9D1 \uBC0F \uC804\uCC98\uB9AC\n2. \uD575\uC2EC \uB0B4\uC6A9 \uCD94\uCD9C\n3. \uC8FC\uC81C\uBCC4 \uBD84\uB958 \uBC0F \uAD6C\uC870\uD654\n4. \uAD00\uB828\uC131 \uBD84\uC11D \uBC0F \uAD50\uCC28 \uCC38\uC870\n5. \uC694\uC57D \uBC0F \uD569\uC131\n6. \uCD5C\uC885 \uBCF4\uACE0\uC11C \uC0DD\uC131",
+        { id: "research_skill", label: "\uC790\uB8CC \uC870\uC0AC",
+          role: "\uBB38\uC11C\uB97C 6\uB2E8\uACC4\uB85C \uC870\uC0AC\u00B7\uBD84\uC11D\uD558\uB294 \uB3C4\uAD6C\uC785\uB2C8\uB2E4.\n1. \uBB38\uC11C \uC218\uC9D1\n2. \uD575\uC2EC \uB0B4\uC6A9 \uCD94\uCD9C\n3. \uC8FC\uC81C\uBCC4 \uBD84\uB958\n4. \uAD00\uB828\uC131 \uBD84\uC11D\n5. \uC694\uC57D \uBC0F \uC885\uD569\n6. \uCD5C\uC885 \uBCF4\uACE0\uC11C \uC791\uC131",
           type: "tool", col: 1, row: 3 },
       ],
       edges: [
-        { from: "controller", to: "planner", label: "\uACC4\uD68D" },
-        { from: "planner", to: "tool_executor", label: "\uC2E4\uD589" },
-        { from: "tool_executor", to: "code_skill" },
-        { from: "tool_executor", to: "research_skill" },
-        { from: "policy_engine", to: "controller", dashed: true, label: "\uC2B9\uC778" },
-        { from: "tool_executor", to: "controller", dashed: true, label: "\uACB0\uACFC" },
+        { from: "controller", to: "planner", label: "\uACC4\uD68D \uC694\uCCAD" },
+        { from: "planner", to: "tool_executor", label: "\uC2E4\uD589 \uC9C0\uC2DC" },
+        { from: "tool_executor", to: "code_skill", label: "\uBD84\uC11D" },
+        { from: "tool_executor", to: "research_skill", label: "\uC870\uC0AC" },
+        { from: "policy_engine", to: "controller", dashed: true, label: "\uC548\uC804 \uC2B9\uC778" },
+        { from: "tool_executor", to: "controller", dashed: true, label: "\uACB0\uACFC \uBCF4\uACE0" },
       ],
+      stepMap: {
+        1: ["controller"],
+        2: ["planner", "policy_engine"],
+        3: ["tool_executor", "code_skill", "research_skill"],
+        4: ["controller"],
+        5: [],
+      },
+      toolMap: {
+        "code_analysis": "code_skill", "code_analysis_skill": "code_skill",
+        "research_analysis": "research_skill", "research_analysis_skill": "research_skill",
+      },
     },
   };
 
@@ -2374,9 +2400,19 @@
     // ── Session Detail ──
     async function showDetail(sessionId) {
       currentDetailId = sessionId;
-      sessionList.style.display = "none";
+      // Animated transition: fade out list, slide in detail
+      sessionList.classList.add("fade-out");
       btnMore.style.display = "none";
-      detailView.style.display = "block";
+      setTimeout(() => {
+        sessionList.style.display = "none";
+        sessionList.classList.remove("fade-out");
+        detailView.style.display = "block";
+        detailView.classList.add("hidden-right");
+        // Force reflow for transition
+        void detailView.offsetWidth;
+        detailView.classList.remove("hidden-right");
+        detailView.classList.add("slide-in");
+      }, 250);
 
       // Loading
       document.getElementById("monDetailTitle").textContent = "Loading...";
@@ -2496,10 +2532,16 @@
     }
 
     function hideDetail() {
-      detailView.style.display = "none";
-      sessionList.style.display = "";
-      currentDetailId = null;
-      if (nextCursor) btnMore.style.display = "block";
+      // Animated transition: slide out detail, fade in list
+      detailView.classList.remove("slide-in");
+      detailView.classList.add("hidden-right");
+      setTimeout(() => {
+        detailView.style.display = "none";
+        detailView.classList.remove("hidden-right");
+        sessionList.style.display = "";
+        currentDetailId = null;
+        if (nextCursor) btnMore.style.display = "block";
+      }, 250);
     }
 
     // ── Load Model Filter Options ──
@@ -2565,12 +2607,7 @@
   function initLiveFeed() {
     if (!window.__DD_MONITOR_ENABLED) return;
 
-    const feed = document.getElementById('liveFeed');
-    if (!feed) return;
-
-    let eventSource = null;
-    let elapsedTimer = null;
-    let startTime = null;
+    var eventSource = null;
 
     function connect() {
       if (eventSource) {
@@ -2581,31 +2618,59 @@
 
       eventSource.onmessage = function(e) {
         try {
-          const data = JSON.parse(e.data);
+          var data = JSON.parse(e.data);
 
           if (data.type === 'connected') {
             if (data.is_processing) {
-              showLiveFeed(data);
+              var note = data.timing_note ? " (" + data.timing_note + ")" : "";
+              _showPrompter("작업 시작", data.title || "", note);
+              _updateActiveArchNode(1, "");
             }
             return;
           }
 
           if (data.type === 'processing_detected') {
-            showProcessingStart(data);
+            var note2 = data.timing_note ? " (" + data.timing_note + ")" : "";
+            _showPrompter("작업 시작", data.title || "", note2);
+            _updateActiveArchNode(1, "");
           }
 
           if (data.type === 'live_progress') {
-            showLiveFeed(data);
-            updateProgress(data);
-            updateStepTimeline(data);
+            _updatePrompter(
+              "단계 " + data.step + "/" + (data.total || "?"),
+              data.message || "",
+              ""
+            );
+            _updateActiveArchNode(data.step, data.tool_name || "");
+          }
+
+          // 실시간 HTTP 콜백 로그
+          if (data.type === 'live_log') {
+            var prompterEl = document.getElementById("archPrompter");
+            if (prompterEl && !prompterEl.classList.contains("visible")) {
+              _showPrompter("실시간 처리 중", data.title || "", "");
+              _updateActiveArchNode(1, "");
+            }
+            _updatePrompter(
+              "단계 " + data.step + "/" + (data.total || "5"),
+              data.message || "",
+              "섹션 " + (data.sections_done || 0) + "/" + (data.sections_total || 10)
+            );
+            _updateActiveArchNode(data.step, "");
+            _appendLogLine(data.message || "");
           }
 
           if (data.type === 'live_complete') {
-            showCompletion(data);
+            _updatePrompter(
+              data.success ? "완료" : "실패",
+              data.success ? "모든 작업 완료" : "처리 중 오류 발생",
+              ""
+            );
+            _showArchCompletion(data.success);
+            _hidePrompter(data.success !== false);
+            // 5초 후 모니터 세션 목록 새로고침
             setTimeout(function() {
-              hideLiveFeed();
-              // Refresh session list to show the new completed session
-              const btnRefresh = document.getElementById('btnMonitorRefresh');
+              var btnRefresh = document.getElementById('btnMonitorRefresh');
               if (btnRefresh) btnRefresh.click();
             }, 5000);
           }
@@ -2620,119 +2685,12 @@
       };
     }
 
-    function showProcessingStart(data) {
-      feed.style.display = 'block';
-      feed.className = 'live-feed';
-      document.getElementById('liveTitle').textContent = data.title || data.video_id || '';
-      document.getElementById('liveProgressFill').style.width = '0%';
-      document.getElementById('liveProgressPct').textContent = '0%';
-      document.getElementById('liveStepCurrent').textContent = 'Processing detected...';
-      document.getElementById('liveTimeline').innerHTML = '';
-      startTime = Date.now();
-      startElapsedTimer();
-    }
-
-    function showLiveFeed(data) {
-      feed.style.display = 'block';
-      document.getElementById('liveTitle').textContent = data.title || data.video_id || '';
-      if (!startTime) {
-        startTime = Date.now();
-        startElapsedTimer();
-      }
-    }
-
-    function updateProgress(data) {
-      var pct = 0;
-      if (data.sections_total && data.sections_total > 0) {
-        pct = Math.round((data.sections_done || 0) / data.sections_total * 100);
-      } else if (data.total && data.total > 0) {
-        pct = Math.round((data.step || 0) / data.total * 100);
-      }
-
-      var fill = document.getElementById('liveProgressFill');
-      fill.style.width = pct + '%';
-      fill.className = 'live-progress-fill';
-      document.getElementById('liveProgressPct').textContent = pct + '%';
-
-      var msg = data.message || '';
-      document.getElementById('liveStepCurrent').textContent = msg;
-    }
-
-    function updateStepTimeline(data) {
-      if (!data.step) return;
-
-      var timeline = document.getElementById('liveTimeline');
-      var stepNum = data.step;
-      var stepEl = timeline.querySelector('[data-step="' + stepNum + '"]');
-
-      if (!stepEl) {
-        stepEl = document.createElement('div');
-        stepEl.className = 'live-step fade-in';
-        stepEl.dataset.step = stepNum;
-        timeline.appendChild(stepEl);
-      }
-
-      var msg = data.message || '';
-      var icon = '\u23F3';  // hourglass default
-      if (msg.indexOf('\u2705') >= 0) { icon = '\u2705'; }       // checkmark
-      else if (msg.indexOf('\u26A0') >= 0) { icon = '\u26A0\uFE0F'; }  // warning
-      else if (msg.indexOf('\u274C') >= 0) { icon = '\u274C'; }  // x mark
-
-      stepEl.innerHTML =
-        '<span class="live-step-icon">' + icon + '</span>' +
-        '<span class="live-step-num">Step ' + stepNum + '/' + (data.total || '?') + '</span>' +
-        '<span class="live-step-msg">' + escapeHtml(msg) + '</span>';
-
-      if (msg.indexOf('\u2705') >= 0) {
-        stepEl.classList.add('completed');
-      }
-    }
-
-    function showCompletion(data) {
-      var fill = document.getElementById('liveProgressFill');
-      fill.style.width = '100%';
-      fill.className = 'live-progress-fill ' + (data.success ? 'success' : 'failed');
-      document.getElementById('liveProgressPct').textContent = '100%';
-      document.getElementById('liveStepCurrent').textContent =
-        data.success ? '\u2705 Processing complete!' : '\u274C Processing failed';
-      stopElapsedTimer();
-    }
-
-    function hideLiveFeed() {
-      feed.style.display = 'none';
-      document.getElementById('liveTimeline').innerHTML = '';
-      document.getElementById('liveProgressFill').style.width = '0%';
-      document.getElementById('liveProgressFill').className = 'live-progress-fill';
-      document.getElementById('liveProgressPct').textContent = '0%';
-      document.getElementById('liveStepCurrent').textContent = '';
-      startTime = null;
-      stopElapsedTimer();
-    }
-
-    function startElapsedTimer() {
-      stopElapsedTimer();
-      elapsedTimer = setInterval(function() {
-        if (!startTime) return;
-        var secs = Math.floor((Date.now() - startTime) / 1000);
-        var mm = String(Math.floor(secs / 60)).padStart(2, '0');
-        var ss = String(secs % 60).padStart(2, '0');
-        document.getElementById('liveElapsed').textContent = mm + ':' + ss;
-      }, 1000);
-    }
-
-    function stopElapsedTimer() {
-      if (elapsedTimer) {
-        clearInterval(elapsedTimer);
-        elapsedTimer = null;
-      }
-    }
-
-    // Check if something is already processing on page load
+    // 페이지 로드 시 진행 중인 작업 확인
     fetch('/api/monitor/live/status')
       .then(function(r) { return r.json(); })
       .then(function(d) {
         if (d.is_processing) {
-          showLiveFeed(d);
+          _showPrompter("작업 진행 중", d.title || "", "");
         }
       })
       .catch(function() {});
@@ -2874,6 +2832,19 @@
 
     // Render legend
     _renderArchLegend(archData);
+
+    // Detail panel close button
+    const closeBtn = document.getElementById("archDetailClose");
+    if (closeBtn) closeBtn.addEventListener("click", _closeArchDetail);
+
+    // Close detail panel when clicking SVG background
+    const svgEl = container.querySelector("svg");
+    if (svgEl) {
+      svgEl.addEventListener("click", (e) => {
+        // Only close if clicking directly on SVG (not a node)
+        if (e.target === svgEl || e.target.tagName === "svg") _closeArchDetail();
+      });
+    }
   }
 
   // ── SVG Constants ──
@@ -2956,6 +2927,8 @@
         lbl.setAttribute("y", my + offY);
         lbl.setAttribute("text-anchor", "middle");
         lbl.setAttribute("class", "arch-edge-label");
+        lbl.dataset.from = edge.from;
+        lbl.dataset.to = edge.to;
         lbl.textContent = edge.label;
         edgesG.appendChild(lbl);
       }
@@ -2969,6 +2942,7 @@
       const g = document.createElementNS(NS, "g");
       g.setAttribute("class", "arch-node arch-node-" + node.type);
       g.setAttribute("transform", "translate(" + pos.x + "," + pos.y + ")");
+      g.dataset.nodeId = node.id;
 
       // Rectangle
       const rect = document.createElementNS(NS, "rect");
@@ -2984,10 +2958,19 @@
       text.textContent = node.label;
       g.appendChild(text);
 
-      // Hover events
-      g.addEventListener("mouseenter", (e) => _showArchTip(node, e));
+      // Hover events — edge highlight + tooltip
+      g.addEventListener("mouseenter", (e) => {
+        _showArchTip(node, e);
+        _highlightEdges(node.id, svg);
+      });
       g.addEventListener("mousemove", (e) => _moveArchTip(e));
-      g.addEventListener("mouseleave", _hideArchTip);
+      g.addEventListener("mouseleave", () => {
+        _hideArchTip();
+        _clearEdgeHighlight(svg);
+      });
+
+      // Click event — detail panel
+      g.addEventListener("click", () => _openArchDetail(node, archData));
 
       nodesG.appendChild(g);
     });
@@ -2998,8 +2981,10 @@
     particleG.setAttribute("id", "archParticles");
     svg.appendChild(particleG);
 
-    container.innerHTML = "";
-    container.appendChild(svg);
+    // Preserve prompter overlay, remove only SVG
+    var oldSvg = container.querySelector("svg");
+    if (oldSvg) container.removeChild(oldSvg);
+    container.insertBefore(svg, container.firstChild);
 
     return { svg, positions, edgesG };
   }
@@ -3138,6 +3123,9 @@
   function _createArchTooltip() {
     const container = document.getElementById("archContainer");
     if (!container) return;
+    // Remove existing tooltip if any (when rebuilding SVG)
+    var old = document.getElementById("archTooltip");
+    if (old) old.remove();
     const tip = document.createElement("div");
     tip.className = "arch-tooltip";
     tip.id = "archTooltip";
@@ -3148,8 +3136,8 @@
   }
 
   const _ARCH_TYPE_KR = {
-    controller: "\uCEE8\uD2B8\uB864\uB7EC", planner: "\uD50C\uB798\uB108",
-    validator: "\uAC80\uC99D\uAE30", executor: "\uC2E4\uD589\uAE30",
+    controller: "\uCD1D\uAD04", planner: "\uACC4\uD68D",
+    validator: "\uAC80\uC99D", executor: "\uC2E4\uD589",
     tool: "\uB3C4\uAD6C", guard: "\uAC10\uC2DC",
   };
   function _showArchTip(node, e) {
@@ -3185,12 +3173,12 @@
     const legend = document.getElementById("archLegend");
     if (!legend) return;
     const types = {
-      controller: { label: "\uCEE8\uD2B8\uB864\uB7EC", color: "#06b6d4" },
-      planner:    { label: "\uD50C\uB798\uB108",       color: "#a855f7" },
-      validator:  { label: "\uAC80\uC99D\uAE30",       color: "#f59e0b" },
-      executor:   { label: "\uC2E4\uD589\uAE30",       color: "#22c55e" },
-      tool:       { label: "\uB3C4\uAD6C",             color: "#6366f1" },
-      guard:      { label: "\uAC10\uC2DC",             color: "#ef4444" },
+      controller: { label: "\uCD1D\uAD04 \uAD00\uB9AC", color: "#06b6d4" },
+      planner:    { label: "\uACC4\uD68D \uC218\uB9BD",  color: "#a855f7" },
+      validator:  { label: "\uAC80\uC99D \uD655\uC778",  color: "#f59e0b" },
+      executor:   { label: "\uC791\uC5C5 \uC2E4\uD589",  color: "#22c55e" },
+      tool:       { label: "\uC804\uBB38 \uB3C4\uAD6C",  color: "#6366f1" },
+      guard:      { label: "\uBE44\uC6A9 \uAC10\uC2DC",  color: "#ef4444" },
     };
     const used = new Set(archData.nodes.map(n => n.type));
     let html = "";
@@ -3204,6 +3192,249 @@
             '<span class="arch-legend-dot" style="background:#06b6d4;border:none;border-radius:50%;width:6px;height:6px"></span>' +
             '\uB370\uC774\uD130 \uD750\uB984</span>';
     legend.innerHTML = html;
+  }
+
+  // ── Edge Highlight (Phase 1) ──
+  function _highlightEdges(nodeId, svg) {
+    // Dim all edges, labels, and nodes
+    svg.querySelectorAll(".arch-edge").forEach(e => e.classList.add("dimmed"));
+    svg.querySelectorAll(".arch-edge-label").forEach(l => l.classList.add("dimmed"));
+    svg.querySelectorAll(".arch-node").forEach(n => n.classList.add("dimmed"));
+
+    // Collect connected node IDs
+    const connected = new Set([nodeId]);
+    svg.querySelectorAll(".arch-edge").forEach(e => {
+      if (e.dataset.from === nodeId || e.dataset.to === nodeId) {
+        e.classList.remove("dimmed");
+        e.classList.add("highlighted");
+        connected.add(e.dataset.from);
+        connected.add(e.dataset.to);
+      }
+    });
+    // Un-dim connected edge labels
+    svg.querySelectorAll(".arch-edge-label").forEach(l => {
+      if (connected.has(l.dataset.from) && connected.has(l.dataset.to)) {
+        l.classList.remove("dimmed");
+      }
+    });
+    // Un-dim connected nodes
+    svg.querySelectorAll(".arch-node").forEach(n => {
+      if (connected.has(n.dataset.nodeId)) n.classList.remove("dimmed");
+    });
+  }
+
+  function _clearEdgeHighlight(svg) {
+    svg.querySelectorAll(".dimmed").forEach(el => el.classList.remove("dimmed"));
+    svg.querySelectorAll(".highlighted").forEach(el => el.classList.remove("highlighted"));
+  }
+
+  // ── Node Detail Panel (Phase 2) ──
+  let _archCurrentData = null;
+
+  function _openArchDetail(node, archData) {
+    const panel = document.getElementById("archDetailPanel");
+    const content = document.getElementById("archDetailContent");
+    if (!panel || !content) return;
+
+    _archCurrentData = archData;
+
+    // Mark selected node visually
+    const container = document.getElementById("archContainer");
+    if (container) {
+      container.querySelectorAll(".arch-node.selected").forEach(n => n.classList.remove("selected"));
+      const nodeG = container.querySelector('[data-node-id="' + node.id + '"]');
+      if (nodeG) nodeG.classList.add("selected");
+    }
+
+    // Build content
+    const typeKr = _ARCH_TYPE_KR[node.type] || node.type;
+    let html = '<div class="arch-detail-name">' + escapeHtml(node.label) + '</div>';
+    html += '<div class="arch-detail-type">' + escapeHtml(typeKr) + ' (' + node.type + ')</div>';
+    html += '<div class="arch-detail-role">' + escapeHtml(node.role) + '</div>';
+
+    // Connections
+    const inEdges = archData.edges.filter(e => e.to === node.id);
+    const outEdges = archData.edges.filter(e => e.from === node.id);
+    if (inEdges.length > 0 || outEdges.length > 0) {
+      html += '<div class="arch-detail-connections">';
+      const nodeMap = {};
+      archData.nodes.forEach(n => { nodeMap[n.id] = n.label; });
+
+      for (const e of inEdges) {
+        html += '<div class="arch-detail-conn-item">' +
+                escapeHtml(nodeMap[e.from] || e.from) +
+                '<span class="conn-arrow">\u2192</span>' +
+                escapeHtml(node.label) +
+                (e.label ? ' <span style="color:var(--text-muted)">(' + escapeHtml(e.label) + ')</span>' : '') +
+                '</div>';
+      }
+      for (const e of outEdges) {
+        html += '<div class="arch-detail-conn-item">' +
+                escapeHtml(node.label) +
+                '<span class="conn-arrow">\u2192</span>' +
+                escapeHtml(nodeMap[e.to] || e.to) +
+                (e.label ? ' <span style="color:var(--text-muted)">(' + escapeHtml(e.label) + ')</span>' : '') +
+                '</div>';
+      }
+      html += '</div>';
+    }
+
+    content.innerHTML = html;
+    panel.classList.add("open");
+  }
+
+  function _closeArchDetail() {
+    const panel = document.getElementById("archDetailPanel");
+    if (panel) panel.classList.remove("open");
+    const container = document.getElementById("archContainer");
+    if (container) {
+      container.querySelectorAll(".arch-node.selected").forEach(n => n.classList.remove("selected"));
+    }
+  }
+
+  // ── Active Node Pulse (Phase 4) — stepMap/toolMap 기반 ──
+  let _archActiveData = null;  // 현재 매칭된 ARCH_REGISTRY 항목 캐시
+
+  function _resolveArchData() {
+    if (_archActiveData) return _archActiveData;
+    const wsName = (window.__DD_WS_NAME || "").toLowerCase();
+    if (!wsName) return null;
+    for (const [key, data] of Object.entries(ARCH_REGISTRY)) {
+      if (wsName.includes(key.toLowerCase())) { _archActiveData = data; return data; }
+    }
+    return null;
+  }
+
+  // ── Prompter Overlay (live messages on diagram) ──────────────
+
+  function _showPrompter(stepText, message, subText) {
+    var el = document.getElementById("archPrompter");
+    if (!el) return;
+    // 아키텍처 섹션이 접혀있으면 자동 펼치기
+    var archSection = document.getElementById("archSection");
+    if (archSection && archSection.classList.contains("is-collapsed")) {
+      var key = archSection.getAttribute("data-fold-key");
+      if (key && typeof applyFold === "function") {
+        applyFold(archSection, key, false, true);
+      }
+    }
+    el.className = "arch-prompter visible";
+    document.getElementById("archPrompterStep").textContent = stepText || "";
+    document.getElementById("archPrompterMsg").textContent = message || "";
+    document.getElementById("archPrompterSub").textContent = subText || "";
+    // 컨테이너에 padding 추가하여 SVG를 오른쪽으로 밀어 겹침 방지
+    var c = document.getElementById("archContainer");
+    if (c) c.classList.add("prompter-active");
+  }
+
+  function _updatePrompter(stepText, message, subText) {
+    var el = document.getElementById("archPrompter");
+    if (!el) return;
+    var msgEl = document.getElementById("archPrompterMsg");
+    msgEl.style.opacity = "0";
+    setTimeout(function() {
+      document.getElementById("archPrompterStep").textContent = stepText || "";
+      msgEl.textContent = message || "";
+      document.getElementById("archPrompterSub").textContent = subText || "";
+      msgEl.style.opacity = "1";
+    }, 200);
+  }
+
+  function _hidePrompter(success) {
+    var el = document.getElementById("archPrompter");
+    if (!el) return;
+    if (success === true) el.classList.add("completed");
+    else if (success === false) el.classList.add("failed");
+    // 20초 후 fade-out
+    setTimeout(function() {
+      el.className = "arch-prompter";
+      var c = document.getElementById("archContainer");
+      if (c) c.classList.remove("prompter-active");
+      // 로그 라인 초기화
+      _logLines = [];
+      var logEl = document.getElementById("archPrompterLog");
+      if (logEl) logEl.innerHTML = "";
+    }, 20000);
+  }
+
+  /* ── Live log line buffer ─────────────────────────── */
+  var _logLines = [];
+  var _logLineMax = 6;
+
+  function _appendLogLine(msg) {
+    var logEl = document.getElementById("archPrompterLog");
+    if (!logEl) return;
+    _logLines.push(msg);
+    if (_logLines.length > _logLineMax) _logLines.shift();
+    logEl.innerHTML = "";
+    _logLines.forEach(function(line) {
+      var div = document.createElement("div");
+      div.className = "arch-prompter-logline";
+      div.textContent = line;
+      logEl.appendChild(div);
+    });
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function _updateActiveArchNode(step, toolName) {
+    const container = document.getElementById("archContainer");
+    if (!container) return;
+    const archData = _resolveArchData();
+    if (!archData) return;
+
+    // 이전 active → done 으로 전환 (꺼지지 않고 유지)
+    container.querySelectorAll(".arch-node.active").forEach(function(n) {
+      n.classList.remove("active");
+      n.classList.add("done");
+    });
+
+    var activatedEl = null;
+
+    // 1) toolName → toolMap 매핑 시도
+    if (toolName && archData.toolMap) {
+      const mappedId = archData.toolMap[toolName] || archData.toolMap[toolName.toLowerCase()];
+      if (mappedId) {
+        const el = container.querySelector('[data-node-id="' + mappedId + '"]');
+        if (el) { el.classList.add("active"); activatedEl = el; }
+      }
+    }
+
+    // 2) step → stepMap 매핑
+    if (!activatedEl && step && archData.stepMap && archData.stepMap[step]) {
+      const nodeIds = archData.stepMap[step];
+      nodeIds.forEach(nid => {
+        const el = container.querySelector('[data-node-id="' + nid + '"]');
+        if (el) {
+          el.classList.add("active");
+          if (!activatedEl) activatedEl = el;
+        }
+      });
+    }
+
+  }
+
+  function _clearActiveArchNodes() {
+    const container = document.getElementById("archContainer");
+    if (!container) return;
+    container.querySelectorAll(".arch-node.active, .arch-node.done, .arch-node.completed, .arch-node.failed").forEach(n => {
+      n.classList.remove("active", "done", "completed", "failed");
+    });
+  }
+
+  function _showArchCompletion(success) {
+    const container = document.getElementById("archContainer");
+    if (!container) return;
+    const nodes = container.querySelectorAll(".arch-node");
+    nodes.forEach(n => n.classList.remove("active", "done"));
+    const cls = success ? "completed" : "failed";
+    // 순차 활성화: 각 노드 350ms 간격
+    nodes.forEach((n, i) => {
+      setTimeout(() => n.classList.add(cls), i * 350);
+    });
+    // 20초 후 fade-out
+    setTimeout(() => {
+      nodes.forEach(n => { n.classList.remove(cls, "done"); });
+    }, 20000);
   }
 
   // ── Start ──

@@ -210,25 +210,6 @@
         </span>
       </div>
 
-      <!-- Live processing feed (auto-shown when extraction detected) -->
-      <div class="live-feed" id="liveFeed" style="display:none">
-        <div class="live-feed-header">
-          <span class="live-indicator">
-            <span class="live-dot"></span> LIVE
-          </span>
-          <span class="live-title" id="liveTitle"></span>
-          <span class="live-elapsed" id="liveElapsed"></span>
-        </div>
-        <div class="live-progress-wrap">
-          <div class="live-progress-bar">
-            <div class="live-progress-fill" id="liveProgressFill"></div>
-          </div>
-          <span class="live-progress-pct" id="liveProgressPct">0%</span>
-        </div>
-        <div class="live-step-current" id="liveStepCurrent"></div>
-        <div class="live-timeline" id="liveTimeline"></div>
-      </div>
-
       <!-- Session list view -->
       <div class="monitor-session-list" id="monSessionList">
         <div class="monitor-loading">Connecting to main service...</div>
@@ -279,12 +260,23 @@
         <span class="toggle-arrow">&#x25BE;</span>
       </button>
       <span class="section-icon">&#9678;</span>
-      <span>ARCHITECTURE</span>
+      <span>에이전트 작동 흐름</span>
       <span class="arch-title-detail" id="archTitleDetail"></span>
     </div>
     <div class="section-body" data-fold-body="arch">
       <div class="arch-subtitle" id="archSubtitle"></div>
-      <div class="arch-container" id="archContainer"></div>
+      <div class="arch-container" id="archContainer">
+        <div class="arch-prompter" id="archPrompter">
+          <div class="arch-prompter-step" id="archPrompterStep"></div>
+          <div class="arch-prompter-msg" id="archPrompterMsg"></div>
+          <div class="arch-prompter-sub" id="archPrompterSub"></div>
+          <div class="arch-prompter-log" id="archPrompterLog"></div>
+        </div>
+      </div>
+      <div class="arch-detail-panel" id="archDetailPanel">
+        <button class="arch-detail-close" id="archDetailClose">&times;</button>
+        <div class="arch-detail-content" id="archDetailContent"></div>
+      </div>
       <div class="arch-legend" id="archLegend"></div>
     </div>
   </section>
